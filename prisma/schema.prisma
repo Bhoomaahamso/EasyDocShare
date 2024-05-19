@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id            String  @id @default(uuid())
+  userId        String
+  userName      String
+  recipientName String
+  title         String
+  to            String
+  from          String
+  message       String
+  code          Int
+  fields        Field[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Field {
+  id          String  @id @default(uuid())
+  name        String
+  description String  @default("")
+  required    Boolean
+  comment     String  @default("")
+
+  attachments Attachment[]
+
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+}
+
+model Attachment {
+  id   String @id @default(uuid())
+  name String
+  key  String
+  size Int
+  url  String
+  type String
+
+  fieldId String
+  field   Field  @relation(fields: [fieldId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fieldId])
+}
