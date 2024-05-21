@@ -36,6 +36,7 @@ import { Field } from "@prisma/client";
 import { useBeforeunload } from "react-beforeunload";
 import { useSearchParams } from "next/navigation";
 import { sendMail } from "@/email/sendMail";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   dynamicFields: z
@@ -102,27 +103,14 @@ function page({ params }: { params: { formId: string } }) {
   const deleteAttachment = async (id) => {
     const data = await axios.delete(`/api/form/${idd}/attachment/${id}`);
     console.log("delete", data);
-  };
-
-  const hgbt = async () => {
-    const res = [
-      {
-        name: "s2.jpg",
-        size: 9148,
-        key: "06f77ccc-afcb-4552-8730-e2e5bb1b5e4f-2sf.jpg",
-        serverData: {
-          uploadedBy: "user_2fMKG7PSb4bXmN7J6cPi3t3XHV5",
-        },
-        url: "https://utfs.io/f/06f77ccc-afcb-4552-8730-e2e5bb1b5e4f-2sf.jpg",
-        customId: null,
-        type: "image/jpeg",
-      },
-    ];
-    // have sub, files state and if not sub then delete all files;
-    const data = await axios.patch("/api/form/" + idd, {
-      form: hookform.getValues().fields[selected],
-      files: res,
-    });
+    hookform.setValue(
+      `fields.${selected}.attachments`,
+      hookform
+        .getValues()
+        .fields[selected].attachments.filter((val) => {
+          console.log('????',id, val)
+          return val.key !== id})
+    );
   };
 
 
@@ -131,14 +119,21 @@ function page({ params }: { params: { formId: string } }) {
   const df: Field[] = hookform.watch("fields");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("submit", values);
-    setSubmitted(true);
-    setFiles([]);
+    try {
+      // DO EMPTY FORM SUBMIT CHECK
+      console.log("submit", values);
+      setSubmitted(true);
+      setFiles([]);
 
-    const res = await axios.post("/api/mail", {
-      id: values.id,
-    });
-    console.log("mailsend", res);
+      const res = await axios.post("/api/mail", {
+        id: values.id,
+      });
+      console.log("mailsend", res);
+      toast.success("Form submitted successfully.");
+    } catch (error) {
+      console.log("ERROR:", error);
+      toast.error("Something went wrong");
+    }
   }
   function onErr(values: any) {
     console.log("errr", values, hookform.formState.errors);
@@ -152,7 +147,7 @@ function page({ params }: { params: { formId: string } }) {
       >
         <div className="">
           <main className="flex min-h-screen flex-col aitems-center ajustify-between pz-24 cursor-pointer">
-            <Button
+            {/* <Button
               type="button"
               onClick={() => {
               
@@ -160,11 +155,14 @@ function page({ params }: { params: { formId: string } }) {
               }}
             >
               BBB
-            </Button>
-          
+            </Button> */}
+
             <div className="">
               {/* {JSON.stringify(hookform.getValues().fields)} */}
-              <h1>{selected+1 +'. '}{hookform.getValues().fields?.[selected].name}</h1>
+              <h1>
+                {selected + 1 + ". "}
+                {hookform.getValues().fields?.[selected].name}
+              </h1>
               <h3>{hookform.getValues().fields?.[selected].description}</h3>
             </div>
             <UploadDropzone
@@ -207,9 +205,8 @@ function page({ params }: { params: { formId: string } }) {
               }}
             />
             <div className="">
-              {hookform
-                .getValues()
-                ?.fields?.[selected]?.attachments.map((file) => {
+              {
+                df?.[selected]?.attachments.map((file) => {
                   return (
                     <div className="">
                       <p>{file.name}</p>
@@ -221,18 +218,19 @@ function page({ params }: { params: { formId: string } }) {
                       </span>
                     </div>
                   );
-                })}
+                })
+              }
             </div>
           </main>
           {/* <Button type="submit">Aloha</Button> */}
         </div>
         <div className="">
           <div className="">
-            <h1>Cheklist</h1>
-            {hookform.getValues()?.fields &&
+            <h1>Checklist</h1>
+            {/* {hookform.getValues()?.fields &&
               JSON.stringify(
                 hookform.getValues().fields.map((i) => i.attachments)
-              )}
+              )} */}
             <h3>{/* ({requireds} Required Item{requireds > 1 && "s"}) */}</h3>
             {df?.map((val, i) => (
               <div
@@ -270,22 +268,28 @@ function page({ params }: { params: { formId: string } }) {
                           {/* {JSON.stringify(field.value)} */}
                         </FormLabel>
                         {!field.value.required && <p className="">Optional</p>}
-                        {field.value.comment &&
-                        //  <p><MessageCircleWarning color="#f70202" /></p>
-                        <Dialog>
-                        <DialogTrigger><MessageCircleWarning size={36} color="#f70202" className="hover:bg-red-200 rounded-full cursor-pointer p-1 " /></DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{field.value.comment}</DialogTitle>
-                            {/* <DialogDescription>
+                        {field.value.comment && (
+                          //  <p><MessageCircleWarning color="#f70202" /></p>
+                          <Dialog>
+                            <DialogTrigger>
+                              <MessageCircleWarning
+                                size={36}
+                                color="#f70202"
+                                className="hover:bg-red-200 rounded-full cursor-pointer p-1 "
+                              />
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{field.value.comment}</DialogTitle>
+                                {/* <DialogDescription>
                               This action cannot be undone. This will permanently delete your account
                               and remove your data from our servers.
                             </DialogDescription> */}
-                          </DialogHeader>
-                        </DialogContent>
-                      </Dialog>
-                        }
-                        
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+
                         {/* <button type="button" onClick={() => remove(i)}>
                           <CircleX color="#ff0000" />
                         </button> */}
@@ -299,8 +303,6 @@ function page({ params }: { params: { formId: string } }) {
                     </FormItem>
                   )}
                 />
-
-           
               </div>
             ))}
           </div>

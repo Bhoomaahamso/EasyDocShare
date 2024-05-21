@@ -46,18 +46,17 @@ const formSchema = z.object({
     })
     .array()
     .min(1, "Please add at least one item to the form.")
-    .refine((fields) => fields.some(field => field.required), {
+    .refine((fields) => fields.some((field) => field.required), {
       message: "At least one field must be marked as required.",
-    })
+    }),
 });
 
 function page() {
   const [view, setView] = useState(false);
 
-  const user = useUser()
-  console.log("user",user);
+  const user = useUser();
+  console.log("user", user);
 
-  
   const hookform = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -73,12 +72,12 @@ function page() {
     control: hookform.control,
     name: "dynamicFields",
   });
-  
+
   useEffect(() => {
     setView(true);
   }, []);
   if (!view) return;
-  if(!user.user) return;
+  if (!user.user) return;
 
   const df: {
     name: string;
@@ -89,19 +88,25 @@ function page() {
   const requireds = df.filter((v) => v.required).length;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    const res = await axios.post('/api/form', {
-      ...values,
-      userId: user?.user?.id,
-      userName: user.user?.fullName || user.user?.firstName,
-      sender: user?.user?.primaryEmailAddress?.emailAddress
-    })
-    console.log("resed", {
-      ...values,
-      userId: user.user.id,
-      userName: user.user?.fullName || user.user?.firstName
-    });
-    // console.log('resed', res)
+    try {
+      console.log(values);
+      // const res = await axios.post('/api/form', {
+      //   ...values,
+      //   userId: user?.user?.id,
+      //   userName: user.user?.fullName || user.user?.firstName,
+      //   sender: user?.user?.primaryEmailAddress?.emailAddress
+      // })
+      // console.log("resed", {
+      //   ...values,
+      //   userId: user.user.id,
+      //   userName: user.user?.fullName || user.user?.firstName
+      // });
+      // console.log('resed', res)
+      toast.success("Form sent successfully");
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    }
   }
   function onErr(obj: any) {
     const messages = [];
@@ -226,14 +231,14 @@ function page() {
           >
             Add Item +
           </Button>
-          <Button
+          {/* <Button
             type="button"
             onClick={() => {
               console.log("qweee", hookform.formState.errors);
             }}
           >
             Aloha
-          </Button>
+          </Button>  */}
         </div>
         <div className="">
           <div className="">
@@ -251,9 +256,12 @@ function page() {
             ))}
           </div>
           <div className="">
+            {/* <Dialog open={open}> */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline">Continue</Button>
+                <Button variant="outline" onClick={() => setOpen(true)}>
+                  Continue
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:maxi-w-[425px]">
                 <DialogHeader>
@@ -314,14 +322,11 @@ function page() {
                 </div>
                 <DialogFooter className="flex flex-row justify-between">
                   {/* <Button type="button">Close</Button> */}
-                  <Button
-                    onClick={hookform.handleSubmit(onSubmit, onErr)}
-                    type="submit"
-                  >
-                    <DialogClose asChild>
-                      <>Send</>
-                    </DialogClose>
+                  {/* <DialogClose asChild> */}
+                  <Button onClick={hookform.handleSubmit(onSubmit, onErr)}>
+                    Send
                   </Button>
+                  {/* </DialogClose> */}
                 </DialogFooter>
               </DialogContent>
             </Dialog>

@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { comment } from "postcss";
 import { Document } from "@prisma/client";
+import { toast } from "sonner";
 
 export default function Page({ params }: { params: { requestId: string } }) {
   const [data, setData] = useState([]);
@@ -88,7 +89,6 @@ export default function Page({ params }: { params: { requestId: string } }) {
         },
         ...a,
       ];
-    
     });
 
     let req = 0,
@@ -151,13 +151,15 @@ export default function Page({ params }: { params: { requestId: string } }) {
         }
       });
       const q = await axios.patch(`/api/form/${res?.id}/comments`, promises);
-      console.log("process", promises,q);
+      console.log("process", promises, q);
+      toast.success("Comments send successfully");
       // Promise.all(promises).then((val) => {
       //   console.log("prom", val);
       //   // console.log('empty')
       // });
     } catch (error) {
       console.log("done for", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -231,8 +233,13 @@ export default function Page({ params }: { params: { requestId: string } }) {
                     )}
                   </div>
                   <div className="">
-                    <h2>Repair Estimate</h2>
+                    <h2>{res?.fields[selected].name}</h2>
                     {/* list of docs */}
+                    <div className="">
+                      {res?.fields[selected].attachments.map((val) => (
+                        <p>{val.name}</p>
+                      ))}
+                    </div>
                     <h2>Add Comments</h2>
                     <div className="">
                       <Textarea
@@ -249,26 +256,24 @@ export default function Page({ params }: { params: { requestId: string } }) {
                       />
                     </div>
                   </div>
-                
                 </div>
                 <DialogFooter className="flex !justify-center ">
                   {/* <DialogClose asChild className="">
                     <Button type="button">Close</Button>
                   </DialogClose> */}
-                  <Button
+                  {/* <Button
                     // onClick={hookform.handleSubmit(onSubmit, onErr)}
                     onClick={() => {
-                      console.log("qqq", selected, comments);
+                      console.log("qqq",res);
                     }}
                   >
                     clg
-                  </Button>
+                  </Button> */}
                   <Button onClick={handleSubmit} type="submit">
                     Send
                   </Button>
                 </DialogFooter>
               </DialogContent>
-            
             </Dialog>
             <Button variant="outline" onClick={() => downloadFiles(att)}>
               Download All <Download className="ml-1 w-4" />
