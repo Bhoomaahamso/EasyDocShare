@@ -4,7 +4,7 @@ import FormElement from "@/components/elements/FormElement";
 import { useState, useId, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
-import { number, z } from "zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,13 +34,13 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 
 const formSchema = z.object({
-  title: z.string().min(3),
-  rname: z.string().min(2),
+  title: z.string().min(3, "Title must contain at least 3 characters"),
+  rname: z.string().min(2, "Name must contain at least 3 characters"),
   email: z.string().email(),
   message: z.string(),
   dynamicFields: z
     .object({
-      name: z.string().min(3),
+      name: z.string().min(3, "Item Name must contain at least 3 characters"),
       description: z.string(),
       required: z.boolean(),
     })
@@ -55,7 +55,6 @@ function page() {
   const [view, setView] = useState(false);
 
   const user = useUser();
-  console.log("user", user);
 
   const hookform = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,40 +83,37 @@ function page() {
     description: string;
     required: boolean;
   }[] = hookform.watch("dynamicFields");
-  // console.log("qq", df);
   const requireds = df.filter((v) => v.required).length;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      console.log(values);
-      // const res = await axios.post('/api/form', {
-      //   ...values,
-      //   userId: user?.user?.id,
-      //   userName: user.user?.fullName || user.user?.firstName,
-      //   sender: user?.user?.primaryEmailAddress?.emailAddress
-      // })
-      // console.log("resed", {
-      //   ...values,
-      //   userId: user.user.id,
-      //   userName: user.user?.fullName || user.user?.firstName
-      // });
-      // console.log('resed', res)
+      console.log("SUBMIT", values);
+      const res = await axios.post('/api/form', {
+        ...values,
+        userId: user?.user?.id,
+        userName: user.user?.fullName || user.user?.firstName,
+        sender: user?.user?.primaryEmailAddress?.emailAddress
+      })
+      console.log("resed", {
+        ...values,
+        userId: user.user.id,
+        userName: user.user?.fullName || user.user?.firstName
+      });
+      console.log('resed', res)
       toast.success("Form sent successfully");
     } catch (error) {
-      console.log(error);
+      console.log("ERROR", error);
       toast.error("Something went wrong");
     }
   }
   function onErr(obj: any) {
     const messages = [];
 
-    // Helper function to traverse through the object recursively
     function traverse(obj) {
       for (const key in obj) {
         if (typeof obj[key] === "object" && obj[key] !== null) {
           traverse(obj[key]);
         } else if (key === "message") {
-          // messages.push(`${key}: ${obj[key]}`);
           messages.push(`${obj[key]}`);
         }
       }
@@ -125,40 +121,50 @@ function page() {
 
     traverse(obj);
     messages.forEach((i) => toast.error(i, { duration: 5000 }));
-    // return messages;
-    console.log("errr", messages, obj);
+    console.log("ONerrr", messages, obj);
   }
 
+  console.log("RENDER");
   return (
     <Form {...hookform}>
       <form
         onSubmit={hookform.handleSubmit(onSubmit, onErr)}
-        className="flex p-4"
+        className="flex justify-center p-4 h-[95vh] bg-[#f8f8f8]"
       >
-        <div className="">
-          <div className="bg-pink-200 max-w-[600px] md:w-[600px]">
-            <h1>Create New Request</h1>
+        {/* col 1 */}
+        {/* <div className="flex flex-col p-4 gap-y-8"> */}
+        <div className="grid grid-cols-[2fr_1fr] gap-x-16 gap-y-8">
+          {/* create form */}
+          <div className="bg-white max-w-[600px] md:w-[600px] p-8 ">
+            <h1 className="text-xl font-medium">Create New Request</h1>
 
             <FormField
               control={hookform.control}
               name="title"
               render={({ field }) => (
-                <FormItem className=" mb-2">
-                  <FormLabel>Request Title</FormLabel>
+                <FormItem className="my-4">
+                  <FormLabel className="text-[#888888]">
+                    Request Title
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Title" {...field} />
+                    <Input
+                      className="!mt-0 text-[#888888]"
+                      placeholder="Title"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <h2 className="font-bold mb-4">Add Items to Checklist</h2>
 
-            <div className="h-[350px] overflow-y-auto scrollbar-width-thin -webkit-scrollbar-none relative">
+            <h2 className=" font-mediummb-2">Add Items to Checklist</h2>
+
+            <div className="h-fit max-h-[350px] overflow-y-auto scrollbar-width-thin -webkit-scrollbar-none relative">
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="space-y-3 my-6 py-2 border-t-2 border-t-black"
+                  className="space-y-3 mt-6 py-4 border-t-2 border-t-black"
                 >
                   <FormField
                     control={hookform.control}
@@ -167,16 +173,22 @@ function page() {
                       <FormItem className=" mb-2">
                         <div className="flex items-center justify-between mb-2">
                           <FormLabel className="">
-                            {index + 1} {field.value || "(Item Name)"}
+                            {index + 1}. {field.value || "(Item Name)"}
                           </FormLabel>
                           <button type="button" onClick={() => remove(index)}>
-                            <CircleX color="#ff0000" />
+                            <CircleX color="#b61a1a" />
                           </button>
                         </div>
                         {/* select */}
-                        <FormLabel>Item Name</FormLabel>
+                        <FormLabel className="text-[#888888]">
+                          Item Name
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="Item Name" {...field} />
+                          <Input
+                            className="!mt-0 text-[#888888]"
+                            placeholder="Item Name"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -187,11 +199,12 @@ function page() {
                     name={`dynamicFields.${index}.description`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
+                        <FormLabel className="text-[#888888]">
                           Item Description/Instructions (Optional){" "}
                         </FormLabel>
                         <FormControl>
                           <Input
+                            className="!mt-0 text-[#888888]"
                             placeholder="Item Description/Instructions (Optional)"
                             {...field}
                           />
@@ -204,15 +217,16 @@ function page() {
                     control={hookform.control}
                     name={`dynamicFields.${index}.required`}
                     render={({ field }) => (
-                      <FormItem className="flex items-start space-x-3 space-y-0  p-4 ">
+                      <FormItem className="flex items-start space-x-2 space-y-0  py-4 ">
                         <FormControl>
                           <Checkbox
+                            className="data-[state=checked]:bg-[#182be2] data-[state=checked]:text-slate-50 rounded"
                             checked={field.value}
                             onCheckedChange={field.onChange}
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none cursor-pointer">
-                          <FormLabel className="cursor-pointer">
+                          <FormLabel className="text-[#888888] cursor-pointer">
                             Required
                           </FormLabel>
                         </div>
@@ -223,27 +237,14 @@ function page() {
               ))}
             </div>
           </div>
-          <Button
-            className="bg-blue-800"
-            onClick={() =>
-              append({ name: "", description: "", required: true })
-            }
-          >
-            Add Item +
-          </Button>
-          {/* <Button
-            type="button"
-            onClick={() => {
-              console.log("qweee", hookform.formState.errors);
-            }}
-          >
-            Aloha
-          </Button>  */}
-        </div>
-        <div className="">
-          <div className="">
-            <h1>Cheklist</h1>
-            <h3>
+       
+        {/* </div> */}
+        {/* col 2 */}
+        {/* <div className="flex flex-col items-center gap-y-8"> */}
+          {/* list */}
+          <div className="space-y-4 min-h-full w-60 p-4 bg-white">
+            <h1 className="text-xl font-medium">Checklist</h1>
+            <h3 className="text-xl font-medium">
               ({requireds} Required Item{requireds > 1 && "s"})
             </h3>
             {df.map((val, i) => (
@@ -251,27 +252,30 @@ function page() {
                 <h5>
                   {i + 1}. {val.name}
                 </h5>
-                {!val.required && <p className="">Optional</p>}
+                {!val.required && <p className="text-[#5c77d1] bg-[#dfecfc] rounded-full px-2">Optional</p>}
               </div>
             ))}
           </div>
-          <div className="">
-            {/* <Dialog open={open}> */}
+             {/* button */}
+             <Button
+            className="bg-blue-800 w-fit ml-8"
+            type="button"
+            onClick={() => {
+              append({ name: "", description: "", required: true });
+            }}
+          >
+            Add Item +
+          </Button>
+          {/* btn */}
+          <div className="text-center">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => setOpen(true)}>
-                  Continue
-                </Button>
+                <Button variant="outline">Continue</Button>
               </DialogTrigger>
               <DialogContent className="sm:maxi-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Settings</DialogTitle>
-                  {/* <DialogDescription>
-                    Make changes to your profile here. Click save when you're
-                    done.
-                  </DialogDescription> */}
                 </DialogHeader>
-                {/* from, to, msg, auth */}
                 <div className="grid gap-4">
                   <FormField
                     control={hookform.control}
@@ -321,12 +325,9 @@ function page() {
                   </div>
                 </div>
                 <DialogFooter className="flex flex-row justify-between">
-                  {/* <Button type="button">Close</Button> */}
-                  {/* <DialogClose asChild> */}
                   <Button onClick={hookform.handleSubmit(onSubmit, onErr)}>
                     Send
                   </Button>
-                  {/* </DialogClose> */}
                 </DialogFooter>
               </DialogContent>
             </Dialog>
