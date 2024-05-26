@@ -83,8 +83,8 @@ export function DataTable2<TData, TValue>({
                     setSelected?.(row.id);
                   }}
                   className={`${
-                    selected === parseInt(row.id) && "bg-red-400 "
-                  } hover:bg-red-200`}
+                    selected === parseInt(row.id) && "bg-[#f2f2f5] "
+                  } hover:bg-[#f2f2f5] cursor-pointer`}
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (

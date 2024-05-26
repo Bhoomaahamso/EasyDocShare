@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { comment } from "postcss";
 import { Document } from "@prisma/client";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils";
 
 export default function Page({ params }: { params: { requestId: string } }) {
   const [data, setData] = useState([]);
@@ -172,55 +173,46 @@ export default function Page({ params }: { params: { requestId: string } }) {
   console.log("dATA", res);
 
   return (
-    <div className="flexa ">
-      <div className="">
-        <h1> Request Status: {status}</h1>
-        <div className="">
-          {/* <h3>Submitted: </h3> */}
-          <h3>Owner: {res?.userName}</h3>
-          <h3>Recipient: {res?.recipientName}</h3>
+    <div className="flex flex-col items-center">
+      <div className="text-center bg-white border border-black w-fit py-8 px-16 rounded-lg">
+        <h1 className="text-2xl font-medium">
+          Request Status:{" "}
+          <span
+            className={`underline ${
+              status === "Completed"
+                ? "text-green-500"
+                : status === "In Progress"
+                ? "text-yellow-400"
+                : "text-red-500"
+            }`}
+          >
+            {status}
+          </span>
+        </h1>
+        <div className="mt-6 flex flex-col gap-y-2">
+          <h3 className="text-xl font-medium">
+            Submitted: {res?.updatedAt && formatDate(res?.updatedAt)}
+          </h3>
+          <h3 className="text-xl font-medium">Owner: {res?.userName}</h3>
+          <h3 className="text-xl font-medium">
+            Recipient: {res?.recipientName}
+          </h3>
         </div>
       </div>
-      <div className="">
-        <h1>Requests Changes</h1>
+      <div className="w-full">
         <div className="container mx-auto py-10">
           <div className="flex justify-between my-4">
-            {/* <Dialog className="bg-red-400">
-              <DialogTrigger className="bg-red-400 text-left">Open</DialogTrigger>
-              <DialogContent className="bag-red-400 text-left">
-                <DialogHeader className="bg-red-400 text-left">
-                  <DialogTitle>Are you absolutely sure?</DialogTitle>
-                  <DialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account and remove your data from our servers.
-                  </DialogDescription>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog> */}
-            {/*  */}
-            <Dialog>
+            <Dialog className="w-[900px]">
               <DialogTrigger asChild>
-                {/* <Button variant="outline">Continue</Button> */}
                 <Button variant="destructive">Request Changes</Button>
               </DialogTrigger>
-              {/* <DialogPortal> */}
-              {/* <DialogOverlay> */}
-              <DialogContent className=" w-[900px]">
-                {/* <DialogHeader className="text-left">
-                      <DialogTitle>Request Changes from:</DialogTitle>
-                      <DialogDescription>
-                        Make changes to your profile here. Click save when
-                        you're done.
-                      </DialogDescription>
-                    </DialogHeader> */}
-                {/* from, to, msg, auth */}
-                {/* <div className="grid gap-4"> */}
-                <div className="flex">
+
+              <DialogContent className="min-w-[800px] p-8">
+                <div className="flex gap-x-8">
                   <div className="">
-                    <h3>Request Changes from:</h3>
-                    <h1>{res?.recipientName}</h1>
-                    <h5>{res?.to}</h5>
-                    {/* <DataTable    /> */}
+                    <h3 className="text-xl font-medium">Request Changes from:</h3>
+                    <h1 className="text-4xl font-bold">{res?.recipientName}</h1>
+                    <h5 className="text-xl font-semibold">{res?.to}</h5>
                     {data.length > 0 && (
                       <DataTable2
                         columns={popup}
@@ -232,43 +224,31 @@ export default function Page({ params }: { params: { requestId: string } }) {
                       />
                     )}
                   </div>
-                  <div className="">
-                    <h2>{res?.fields[selected].name}</h2>
-                    {/* list of docs */}
+                  <div className="flex-grow">
+                    <h2 className="text-xl font-medium">{res?.fields[selected].name}</h2>
                     <div className="">
                       {res?.fields[selected].attachments.map((val) => (
-                        <p>{val.name}</p>
+                        <p className="text-sm  font-medium text-">{val.name}</p>
                       ))}
                     </div>
-                    <h2>Add Comments</h2>
+                    <h2 className="text-xl font-medium mt-4">Add Comments</h2>
                     <div className="">
                       <Textarea
+                      className="w-full h-[200px]"
                         value={comment}
                         onChange={(e) => {
                           setComment(e.target.value);
-                          console.log("area", e.target.value);
                           setComments((prevComments) => {
-                            const updatedComments = [...prevComments]; // Create a shallow copy of the original array
-                            updatedComments[selected] = e.target.value; // Update the value at the selected index
-                            return updatedComments; // Return the updated array
+                            const updatedComments = [...prevComments];
+                            updatedComments[selected] = e.target.value;
+                            return updatedComments;
                           });
                         }}
                       />
                     </div>
                   </div>
                 </div>
-                <DialogFooter className="flex !justify-center ">
-                  {/* <DialogClose asChild className="">
-                    <Button type="button">Close</Button>
-                  </DialogClose> */}
-                  {/* <Button
-                    // onClick={hookform.handleSubmit(onSubmit, onErr)}
-                    onClick={() => {
-                      console.log("qqq",res);
-                    }}
-                  >
-                    clg
-                  </Button> */}
+                <DialogFooter className="flex !justify-center mt-4">
                   <Button onClick={handleSubmit} type="submit">
                     Send
                   </Button>
@@ -279,10 +259,7 @@ export default function Page({ params }: { params: { requestId: string } }) {
               Download All <Download className="ml-1 w-4" />
             </Button>
           </div>
-          {data.length > 0 && (
-            // <DataTable columns={columns} data={Array(9).fill(data).flat()} />
-            <DataTable columns={columns} data={data} />
-          )}
+          {data.length > 0 && <DataTable columns={columns} data={data} />}
         </div>
       </div>
     </div>

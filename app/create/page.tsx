@@ -252,13 +252,13 @@ function page() {
                 <h5>
                   {i + 1}. {val.name}
                 </h5>
-                {!val.required && <p className="text-[#5c77d1] bg-[#dfecfc] rounded-full px-2">Optional</p>}
+                {!val.required && <p className="text-[#5c77d1] bg-[#dfecfc] font-semibold rounded-full px-2">Optional</p>}
               </div>
             ))}
           </div>
              {/* button */}
              <Button
-            className="bg-blue-800 w-fit ml-8"
+            className="bg-[#1c2dd6] w-fit ml-8"
             type="button"
             onClick={() => {
               append({ name: "", description: "", required: true });
@@ -325,7 +325,7 @@ function page() {
                   </div>
                 </div>
                 <DialogFooter className="flex flex-row justify-between">
-                  <Button onClick={hookform.handleSubmit(onSubmit, onErr)}>
+                  <Button className="bg-[#1c2dd6]" onClick={hookform.handleSubmit(onSubmit, onErr)}>
                     Send
                   </Button>
                 </DialogFooter>

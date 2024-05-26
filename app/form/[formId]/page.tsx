@@ -105,25 +105,22 @@ function page({ params }: { params: { formId: string } }) {
     console.log("delete", data);
     hookform.setValue(
       `fields.${selected}.attachments`,
-      hookform
-        .getValues()
-        .fields[selected].attachments.filter((val) => {
-          console.log('????',id, val)
-          return val.key !== id})
+      hookform.getValues().fields[selected].attachments.filter((val) => {
+        return val.key !== id;
+      })
     );
   };
-
 
   if (!view) return;
 
   const df: Field[] = hookform.watch("fields");
+  const requireds = df?.filter((v) => v.required).length;
+  const done = df?.filter((v) => v.required && v.attachments.length > 0).length;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       // DO EMPTY FORM SUBMIT CHECK
       console.log("submit", values);
-      setSubmitted(true);
-      setFiles([]);
 
       const res = await axios.post("/api/mail", {
         id: values.id,
@@ -143,29 +140,21 @@ function page({ params }: { params: { formId: string } }) {
     <Form {...hookform}>
       <form
         onSubmit={hookform.handleSubmit(onSubmit, onErr)}
-        className="flex p-4"
+        className="flex p-4 h-[95vh] justify-center"
       >
-        <div className="">
-          <main className="flex min-h-screen flex-col aitems-center ajustify-between pz-24 cursor-pointer">
-            {/* <Button
-              type="button"
-              onClick={() => {
-              
-                console.log("ssssssasda", hookform.getValues());
-              }}
-            >
-              BBB
-            </Button> */}
-
+        <div className="grid grid-cols-[3fr_1fr] grid-rows-[9fr_1fr] gap-x-12 gap-y-8 h-full">
+          <div className="flex flex-col p-8 bg-white">
             <div className="">
-              {/* {JSON.stringify(hookform.getValues().fields)} */}
-              <h1>
+              <h1 className="text-lg font-medium pl-4">
                 {selected + 1 + ". "}
                 {hookform.getValues().fields?.[selected].name}
               </h1>
-              <h3>{hookform.getValues().fields?.[selected].description}</h3>
+              <h3 className="text-base font-medium pl-4">
+                {hookform.getValues().fields?.[selected].description}
+              </h3>
             </div>
             <UploadDropzone
+              className="h-[400px] cursor-pointer"
               endpoint="imageUploader"
               onClientUploadComplete={async function (res) {
                 try {
@@ -204,72 +193,53 @@ function page({ params }: { params: { formId: string } }) {
                 return files;
               }}
             />
-            <div className="">
-              {
-                df?.[selected]?.attachments.map((file) => {
-                  return (
-                    <div className="">
-                      <p>{file.name}</p>
-                      <span>
-                        <CircleX
-                          color="#ff0000"
-                          onClick={() => deleteAttachment(file.key)}
-                        />
-                      </span>
-                    </div>
-                  );
-                })
-              }
+            <div className="mt-8">
+              {df?.[selected]?.attachments.map((file) => {
+                return (
+                  <div className="flex items-center text-sm gap-x-4 mb-1">
+                    <p>{file.name}</p>
+                    <span>
+                      <CircleX
+                        color="#b61a1a"
+                        size={20}
+                        onClick={() => deleteAttachment(file.key)}
+                      />
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          </main>
-          {/* <Button type="submit">Aloha</Button> */}
-        </div>
-        <div className="">
-          <div className="">
-            <h1>Checklist</h1>
-            {/* {hookform.getValues()?.fields &&
-              JSON.stringify(
-                hookform.getValues().fields.map((i) => i.attachments)
-              )} */}
-            <h3>{/* ({requireds} Required Item{requireds > 1 && "s"}) */}</h3>
+          </div>
+          {/* list */}
+          <div className=" bg-white w-60">
+            <h1 className="text-xl font-medium pl-4 my-4">Checklist</h1>
+            <h3 className="text-base font-medium pl-4 my-4">
+              ({done}/{requireds} Required Item{requireds > 1 && "s"})
+            </h3>
             {df?.map((val, i) => (
               <div
-                className={`flex justify-between ${
-                  i == selected && "bg-red-400"
+                className={`flex justify-between hover:bg-[#f2f2f5] cursor-pointer ${
+                  i == selected && "bg-[#f2f2f5]"
                 }`}
                 onClick={() => {
                   setSelected(i);
-                  // console.log("SET ATT");
-                  // hookform.setValue(`fields.${i}.attachments`, [
-                  //   ...hookform.getValues().fields[i].attachments,
-                  //   "hiiiiii",
-                  // ]);
-                  // console.log('qazaq', hookform.getValues().fields[0])
                 }}
-                // {...hookform.register(`fields.${i}.attachments`, {
-                //   validate: (value) => {
-                //     if (hookform.getValues().fields[i].required === true) {
-                //       console.log("valid", value);
-                //       return value.length > 0
-                //         ? true
-                //         : "The item cannot be empty";
-                //     } else return true;
-                //   },
-                // })}
               >
                 <FormField
                   control={hookform.control}
                   name={`fields.${i}`}
                   render={({ field }) => (
-                    <FormItem className=" mb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <FormLabel className="">
+                    <FormItem className="">
+                      <div className="flex items-center justify-between py-4 gap-x-4">
+                        <FormLabel className="text-sm font-medium pl-4">
                           {i + 1} {field.value.name}
-                          {/* {JSON.stringify(field.value)} */}
                         </FormLabel>
-                        {!field.value.required && <p className="">Optional</p>}
+                        {!field.value.required && (
+                          <p className="text-[#5c77d1] font-semibold bg-[#dfecfc] rounded-full px-2">
+                            Optional
+                          </p>
+                        )}
                         {field.value.comment && (
-                          //  <p><MessageCircleWarning color="#f70202" /></p>
                           <Dialog>
                             <DialogTrigger>
                               <MessageCircleWarning
@@ -281,10 +251,6 @@ function page({ params }: { params: { formId: string } }) {
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>{field.value.comment}</DialogTitle>
-                                {/* <DialogDescription>
-                              This action cannot be undone. This will permanently delete your account
-                              and remove your data from our servers.
-                            </DialogDescription> */}
                               </DialogHeader>
                             </DialogContent>
                           </Dialog>
@@ -306,8 +272,9 @@ function page({ params }: { params: { formId: string } }) {
               </div>
             ))}
           </div>
-          <div className="">
-            <Button variant="outline" type="submit">
+          {/* btn */}
+          <div className="col-start-2 text-center">
+            <Button className="bg-[#182be2]" type="submit">
               Continue
             </Button>
           </div>

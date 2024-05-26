@@ -51,9 +51,7 @@ function page() {
             <InputOTPSlot index={5} />
           </InputOTPGroup>
         </InputOTP>
-        {/* <Button className="w-full" onClick={handleVerify}> */}
-        {/* <Button className="w-full" onClick={sendEmail}> */}
-        <Button className="w-full" onClick={handleClick}>
+        <Button className="w-full bg-[#1c2dd6]" onClick={handleClick}>
           Verify
         </Button>
       </div>

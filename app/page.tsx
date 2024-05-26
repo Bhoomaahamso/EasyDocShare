@@ -6,39 +6,15 @@ import { Payment, columns } from "./columns";
 import { DataTable } from "./data-table";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { currentUser } from "@clerk/nextjs/server";
-
 import axios from "axios";
 import { redirect } from "next/navigation";
+import { formatDate } from "@/lib/utils";
 
 export default function Home() {
   const { userId } = useAuth();
   const [data, setData] = useState([]);
 
   if (!userId) redirect("/sign-up");
-
-  function formatDate(dateString: string) {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    const date = new Date(dateString);
-    const month = months[date.getUTCMonth()];
-    const day = date.getUTCDate();
-
-    return `${month} ${day}`;
-  }
 
   const getData = async () => {
     const res = await axios.get(`/api/user/${userId}`);
@@ -51,6 +27,7 @@ export default function Home() {
         if (field.required && field.attachments.length > 0) req += 1;
       });
       return {
+        id: f.id,
         title: f.title,
         recipient: f.recipientName,
         requester: f.userName,

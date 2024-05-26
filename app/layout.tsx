@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter } from "next/font/google";
+import { Wix_Madefor_Text } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import {  SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 
-const inter = Inter({ subsets: ["latin"] });
+const wix = Wix_Madefor_Text({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${inter.className} h-screen`}>
+        <body className={`${wix.className} h-screen bg-[#f8f8f8]`}>
         <header className="h-[5vh]">
             <SignedOut>
               <SignInButton />
