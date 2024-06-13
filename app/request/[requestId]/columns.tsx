@@ -15,7 +15,7 @@ import {
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type Payment = {
+export type TableData = {
   index: string;
   item: string;
   recipient: string;
@@ -43,7 +43,7 @@ function downloadFile(url: string, filename: string) {
     .catch((error) => console.error("Error downloading file:", error));
 }
 
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<TableData>[] = [
   { accessorKey: "index", header: "#" },
   { accessorKey: "item", header: "ITEM" },
   { accessorKey: "recipient", header: "RECIPIENT" },

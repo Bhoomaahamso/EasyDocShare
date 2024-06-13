@@ -1,10 +1,9 @@
 "use client";
 
-import FormElement from "@/components/elements/FormElement";
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
-import { number, z } from "zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -31,11 +30,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
-import { UploadButton, UploadDropzone } from "@/utils/uploadthing";
+import { UploadDropzone } from "@/utils/uploadthing";
 import { Field } from "@prisma/client";
-import { useBeforeunload } from "react-beforeunload";
-import { useSearchParams } from "next/navigation";
-import { sendMail } from "@/email/sendMail";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -49,7 +45,7 @@ const formSchema = z.object({
     .nonempty(),
 });
 
-function page({ params }: { params: { formId: string } }) {
+function Page({ params }: { params: { formId: string } }) {
   const [view, setView] = useState(false);
   const [selected, setSelected] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -57,7 +53,6 @@ function page({ params }: { params: { formId: string } }) {
 
   const { userId } = useAuth();
   const idd = params.formId;
-  // const idd = "9fe666b6-307a-4ae4-a68a-c6ee4df21586";
   console.log("user", userId, idd, params.formId);
 
   const hookform = useForm<z.infer<typeof formSchema>>({
@@ -196,7 +191,7 @@ function page({ params }: { params: { formId: string } }) {
             <div className="mt-8">
               {df?.[selected]?.attachments.map((file) => {
                 return (
-                  <div className="flex items-center text-sm gap-x-4 mb-1">
+                  <div key={file.key} className="flex items-center text-sm gap-x-4 mb-1">
                     <p>{file.name}</p>
                     <span>
                       <CircleX
@@ -218,6 +213,7 @@ function page({ params }: { params: { formId: string } }) {
             </h3>
             {df?.map((val, i) => (
               <div
+              key={val.id}
                 className={`flex justify-between hover:bg-[#f2f2f5] cursor-pointer ${
                   i == selected && "bg-[#f2f2f5]"
                 }`}
@@ -283,4 +279,4 @@ function page({ params }: { params: { formId: string } }) {
     </Form>
   );
 }
-export default page;
+export default Page;

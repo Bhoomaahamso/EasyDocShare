@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* @font-face {
+    font-family: 'Wix_Madefor_Text';
+    src: url('/fonts/Wix_Madefor_Text') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  } */
+
 /* width */
 ::-webkit-scrollbar {
     width: 10px;

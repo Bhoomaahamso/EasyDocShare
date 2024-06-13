@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Wix_Madefor_Text } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner"
-import {  SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import { Toaster } from "@/components/ui/sonner";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import Script from "next/script";
 
-const wix = Wix_Madefor_Text({ subsets: ["latin"] });
+const wix = Wix_Madefor_Text({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,8 +21,13 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+        <head>
+          {/* <script src="//mozilla.github.io/pdf.js/build/pdf.mjs" type="module"></script> */}
+          {/* <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs" type="module"></script> */}
+          {/* <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf_viewer.min.css" integrity="sha512-kQO2X6Ls8Fs1i/pPQaRWkT40U/SELsldCgg4njL8zT0q4AfABNuS+xuy+69PFT21dow9T6OiJF43jan67GX+Kw==" crossorigin="anonymous" referrerpolicy="no-referrer" /> */}
+        </head>
         <body className={`${wix.className} h-screen bg-[#f8f8f8]`}>
-        <header className="h-[5vh]">
+          <header className="h-[5vh]">
             <SignedOut>
               <SignInButton />
             </SignedOut>
@@ -31,7 +37,13 @@ export default function RootLayout({
           </header>
           {children}
           <Toaster richColors expand closeButton />
-          </body>
+          {/* <Script
+          // src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf_viewer.min.css"
+          // src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"
+          src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.3.136/pdf.min.mjs"
+          strategy="beforeInteractive"
+        /> */}
+        </body>
       </html>
     </ClerkProvider>
   );

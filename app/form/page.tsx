@@ -11,7 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
 
-function page() {
+function Page() {
   const [code, setCode] = useState("");
   const router = useRouter();
   const fid = useSearchParams().get("f");
@@ -58,4 +58,4 @@ function page() {
     </div>
   );
 }
-export default page;
+export default Page;

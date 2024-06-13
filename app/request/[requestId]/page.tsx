@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import JSZip from "jszip";
 
-import { Payment, columns, popup } from "./columns";
+import { TableData, columns, popup } from "./columns";
 import { DataTable } from "./data-table";
 import { DataTable2 } from "./data-table2";
 import { useEffect, useState } from "react";
@@ -228,7 +228,7 @@ export default function Page({ params }: { params: { requestId: string } }) {
                     <h2 className="text-xl font-medium">{res?.fields[selected].name}</h2>
                     <div className="">
                       {res?.fields[selected].attachments.map((val) => (
-                        <p className="text-sm  font-medium text-">{val.name}</p>
+                        <p key={val.id} className="text-sm  font-medium text-">{val.name}</p>
                       ))}
                     </div>
                     <h2 className="text-xl font-medium mt-4">Add Comments</h2>
