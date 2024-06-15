@@ -17,14 +17,14 @@ export default function Test({ url }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [annotations, setAnnotations] = useState([]);
-  const [signatures, setSignatures] = useState([]);
-  const [dates, setDates] = useState([]);
+  // const [signatures, setSignatures] = useState([]);
+  // const [dates, setDates] = useState([]);
   const [hoveredAnnotationIndex, setHoveredAnnotationIndex] = useState(null);
   const [hoveredSignatureIndex, setHoveredSignatureIndex] = useState(null);
   const [hoveredDateIndex, setHoveredDateIndex] = useState(null);
   const [resizingIndex, setResizingIndex] = useState(null);
   const [resizeStart, setResizeStart] = useState(null);
-  const [qelem, setQelem] = useState(null);
+  // const [qelem, setQelem] = useState(null);
   const [buttonPositions, setButtonPositions] = useState({
     addSignature: { x: 20, y: 20 },
     addDate: { x: 140, y: 20 },
@@ -80,13 +80,23 @@ export default function Test({ url }) {
     const y = event.clientY - rect.top;
 
     const newAnnotation = {
-      role,
-      left: `${50}px`,
-      top: `${150}px`,
+      annotationType: "text",
+      left: "50px",
+      top: "150px",
       width: 100,
       height: 20,
       value: "",
+      imageType: "",
+      role,
     };
+    //  {
+    //   role,
+    //   left: `${50}px`,
+    //   top: `${150}px`,
+    //   width: 100,
+    //   height: 20,
+    //   value: "",
+    // };
     setAnnotations([...annotations, newAnnotation]);
   };
 
@@ -113,15 +123,27 @@ export default function Test({ url }) {
           img.onload = (e) => {
             // console.log('omload',e)
             const newSignature = {
+              annotationType: "signature", // 'text', 'signature', 'date'
+              left: "50px",
+              top: "200px",
+              width: img.width / 4,
+              height: img.height / 4,
+              value: img.src,
+              imageType: match[1],
               role,
-              left: `${50}px`,
-              top: `${200}px`,
-              width: img.width / 4, // Adjust size as needed
-              height: img.height / 4, // Adjust size as needed
-              src: img.src,
-              type: match[1],
             };
-            setSignatures([...signatures, newSignature]);
+            // {
+            //   role,
+            //   left: `${50}px`,
+            //   top: `${200}px`,
+            //   width: img.width / 4, // Adjust size as needed
+            //   height: img.height / 4, // Adjust size as needed
+            //   src: img.src,
+            //   type: match[1],
+            // };
+            setAnnotations([...annotations, newSignature]);
+
+            // setSignatures([...signatures, newSignature]);
           };
         };
         reader.readAsDataURL(file);
@@ -171,14 +193,25 @@ export default function Test({ url }) {
     dateInput.type = "date";
     dateInput.onchange = (e) => {
       const newDate = {
-        role,
-        left: `${100}px`,
-        top: `${100}px`,
+        annotationType: "date", // 'text', 'signature', 'date'
+        left: "100px",
+        top: "100px",
         width: 100,
         height: 20,
         value: e.target.value,
+        imageType: "",
+        role,
       };
-      setDates([...dates, newDate]);
+      // {
+      //   role,
+      //   left: `${100}px`,
+      //   top: `${100}px`,
+      //   width: 100,
+      //   height: 20,
+      //   value: e.target.value,
+      // };
+      setAnnotations([...annotations, newDate]);
+      // setDates([...dates, newDate]);
     };
     dateInput.style.position = "absolute";
     dateInput.style.left = `${100 + scrollX + rect.left}px`;
@@ -194,69 +227,71 @@ export default function Test({ url }) {
     };
   };
 
-  const signatureOnMouseDown = (event, index) => {
-    let offsetX, offsetY;
-    let isDragging = false;
-    let startX, startY;
-    isDragging = false;
-    startX = event.clientX;
-    startY = event.clientY;
-    offsetX = event.clientX - parseInt(signatures[index].left);
-    offsetY = event.clientY - parseInt(signatures[index].top);
+  // const signatureOnMouseDown = (event, index) => {
+  //   let offsetX, offsetY;
+  //   let isDragging = false;
+  //   let startX, startY;
+  //   isDragging = false;
+  //   startX = event.clientX;
+  //   startY = event.clientY;
+  //   offsetX = event.clientX - parseInt(signatures[index].left);
+  //   offsetY = event.clientY - parseInt(signatures[index].top);
 
-    const onMouseMove = (event) => {
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-        isDragging = true;
+  //   const onMouseMove = (event) => {
+  //     const dx = event.clientX - startX;
+  //     const dy = event.clientY - startY;
+  //     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+  //       isDragging = true;
 
-        const updatedSignatures = [...signatures];
-        updatedSignatures[index].left = `${event.clientX - offsetX}px`;
-        updatedSignatures[index].top = `${event.clientY - offsetY}px`;
-        setSignatures(updatedSignatures);
-      }
-    };
+  //       const updatedSignatures = [...signatures];
+  //       updatedSignatures[index].left = `${event.clientX - offsetX}px`;
+  //       updatedSignatures[index].top = `${event.clientY - offsetY}px`;
+  //       setAnnotations(updatedSignatures);
+  //       // setSignatures(updatedSignatures);
+  //     }
+  //   };
 
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
+  //   const onMouseUp = () => {
+  //     document.removeEventListener("mousemove", onMouseMove);
+  //     document.removeEventListener("mouseup", onMouseUp);
+  //   };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
+  //   document.addEventListener("mousemove", onMouseMove);
+  //   document.addEventListener("mouseup", onMouseUp);
+  // };
 
-  const dateOnMouseDown = (event, index) => {
-    let offsetX, offsetY;
-    let isDragging = false;
-    let startX, startY;
-    isDragging = false;
-    startX = event.clientX;
-    startY = event.clientY;
-    offsetX = event.clientX - parseInt(dates[index].left);
-    offsetY = event.clientY - parseInt(dates[index].top);
+  // const dateOnMouseDown = (event, index) => {
+  //   let offsetX, offsetY;
+  //   let isDragging = false;
+  //   let startX, startY;
+  //   isDragging = false;
+  //   startX = event.clientX;
+  //   startY = event.clientY;
+  //   offsetX = event.clientX - parseInt(dates[index].left);
+  //   offsetY = event.clientY - parseInt(dates[index].top);
 
-    const onMouseMove = (event) => {
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-        isDragging = true;
+  //   const onMouseMove = (event) => {
+  //     const dx = event.clientX - startX;
+  //     const dy = event.clientY - startY;
+  //     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+  //       isDragging = true;
 
-        const updatedSignatures = [...dates];
-        updatedSignatures[index].left = `${event.clientX - offsetX}px`;
-        updatedSignatures[index].top = `${event.clientY - offsetY}px`;
-        setDates(updatedSignatures);
-      }
-    };
+  //       const updatedSignatures = [...dates];
+  //       updatedSignatures[index].left = `${event.clientX - offsetX}px`;
+  //       updatedSignatures[index].top = `${event.clientY - offsetY}px`;
+  //       setAnnotations(updatedSignatures);
+  //       // setDates(updatedSignatures);
+  //     }
+  //   };
 
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
+  //   const onMouseUp = () => {
+  //     document.removeEventListener("mousemove", onMouseMove);
+  //     document.removeEventListener("mouseup", onMouseUp);
+  //   };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
+  //   document.addEventListener("mousemove", onMouseMove);
+  //   document.addEventListener("mouseup", onMouseUp);
+  // };
 
   const handleAnnotationChange = (index, value) => {
     const updatedAnnotations = annotations.map((annotation, i) =>
@@ -270,36 +305,38 @@ export default function Test({ url }) {
     setAnnotations(updatedAnnotations);
   };
 
-  const handleSignatureDelete = (index) => {
-    const updatedSignatures = signatures.filter((_, i) => i !== index);
-    setSignatures(updatedSignatures);
-  };
+  // const handleSignatureDelete = (index) => {
+  //   const updatedSignatures = signatures.filter((_, i) => i !== index);
+  //   setAnnotations(updatedSignatures);
+  //   // setSignatures(updatedSignatures);
+  // };
 
-  const handleDateDelete = (index) => {
-    const updatedDates = dates.filter((_, i) => i !== index);
-    setDates(updatedDates);
-  };
+  // const handleDateDelete = (index) => {
+  //   const updatedDates = dates.filter((_, i) => i !== index);
+  //   setAnnotations(updatedDates);
+  //   // setDates(updatedDates);
+  // };
 
-  useEffect(() => {
-    console.log(
-      "INDEX",
-      hoveredAnnotationIndex,
-      hoveredSignatureIndex,
-      hoveredDateIndex
-    );
-  }, [hoveredAnnotationIndex, hoveredSignatureIndex, hoveredDateIndex]);
+  // useEffect(() => {
+  //   console.log(
+  //     "INDEX",
+  //     hoveredAnnotationIndex,
+  //     hoveredSignatureIndex,
+  //     hoveredDateIndex
+  //   );
+  // }, [hoveredAnnotationIndex, hoveredSignatureIndex, hoveredDateIndex]);
 
   const handleMouseDown = (index, event, type) => {
     setResizingIndex(index);
-    const elem = type === "a" ? annotations : type === "s" ? signatures : dates;
+    // const elem = type === "a" ? annotations : type === "s" ? signatures : dates;
 
     setResizeStart({
       startX: event.clientX,
       startY: event.clientY,
-      startWidth: elem[index].width,
-      startHeight: elem[index].height,
+      startWidth: annotations[index].width,
+      startHeight: annotations[index].height,
     });
-    setQelem(type);
+    // setQelem(type);
     event.stopPropagation();
   };
 
@@ -317,42 +354,44 @@ export default function Test({ url }) {
       const dy = event.clientY - resizeStart.startY;
       const newWidth = resizeStart.startWidth + dx;
       const newHeight = resizeStart.startHeight + dy;
-      if (qelem === "a") {
+      // if (qelem === "a") {
         const updatedAnnotations = annotations.map((annotation, i) =>
           i === resizingIndex
             ? {
                 ...annotation,
                 width: newWidth,
-                height: 1.2 * newHeight,
+                height: annotation.annotationType === 'signature' ? newHeight : 1.2 * newHeight,
                 fontSize: newHeight,
               }
             : annotation
         );
         setAnnotations(updatedAnnotations);
-      } else if (qelem === "s") {
-        const updatedAnnotations = signatures.map((annotation, i) =>
-          i === resizingIndex
-            ? {
-                ...annotation,
-                width: newWidth,
-                height: newHeight,
-              }
-            : annotation
-        );
-        setSignatures(updatedAnnotations);
-      } else if (qelem === "d") {
-        const updatedAnnotations = dates.map((annotation, i) =>
-          i === resizingIndex
-            ? {
-                ...annotation,
-                width: newWidth,
-                height: 1.2 * newHeight,
-                fontSize: newHeight,
-              }
-            : annotation
-        );
-        setDates(updatedAnnotations);
-      }
+      // } else if (qelem === "s") {
+      //   const updatedAnnotations = signatures.map((annotation, i) =>
+      //     i === resizingIndex
+      //       ? {
+      //           ...annotation,
+      //           width: newWidth,
+      //           height: newHeight,
+      //         }
+      //       : annotation
+      //   );
+      //   setAnnotations(updatedAnnotations);
+      //   // setSignatures(updatedAnnotations);
+      // } else if (qelem === "d") {
+      //   const updatedAnnotations = dates.map((annotation, i) =>
+      //     i === resizingIndex
+      //       ? {
+      //           ...annotation,
+      //           width: newWidth,
+      //           height: 1.2 * newHeight,
+      //           fontSize: newHeight,
+      //         }
+      //       : annotation
+      //   );
+      //   setAnnotations(updatedAnnotations);
+      //   // setDates(updatedAnnotations);
+      // }
     }
     // else if (draggingButton) {
     //   debugger;
@@ -369,7 +408,7 @@ export default function Test({ url }) {
     setResizingIndex(null);
     setResizeStart(null);
     setDraggingButton(null);
-    setQelem(null);
+    // setQelem(null);
   };
 
   // const handleDragStart = (button) => {
@@ -426,17 +465,36 @@ export default function Test({ url }) {
     //   value: "",
     // };
     const rect = canvasRef.current.getBoundingClientRect();
-    annotations.forEach((val) => {
+    annotations.forEach(async(val) => {
       if (val.role !== "creator") return;
       console.log("rect", rect);
-      firstPage.drawText(val.value, {
-        x: parseInt(val.left),
-        y: rect.height - parseInt(val.top) - val.height / 1.2,
-        size: val.height / 1.2,
-        font: helveticaFont,
-        color: rgb(0.95, 0.1, 0.1),
-        // rotate: degrees(-45),
-      });
+
+      if (val.annotationType === "signature") {
+        let img;
+        // debugger
+        console.log("val", val);
+        if (val.imageType === "png") {
+          img = await pdfDoc.embedPng(val.value);
+        } else if (val.imageType === "jpeg") {
+          img = await pdfDoc.embedJpg(val.value);
+        }
+
+        firstPage.drawImage(img, {
+          x: parseInt(val.left),
+          y: rect.height - parseInt(val.top) - val.height,
+          width: val.width,
+          height: val.height,
+        });
+      } else {
+        firstPage.drawText(val.value, {
+          x: parseInt(val.left),
+          y: rect.height - parseInt(val.top) - val.height / 1.2,
+          size: val.height / 1.2,
+          font: helveticaFont,
+          color: rgb(0.95, 0.1, 0.1),
+          // rotate: degrees(-45),
+        });
+      }
     });
     // const newDate = {
     //   role,
@@ -446,38 +504,37 @@ export default function Test({ url }) {
     //   height: 20,
     //   value: e.target.value,
     // };
-    dates.forEach((val) => {
-      if (val.role !== "creator") return;
-      console.log("rect", rect);
-      firstPage.drawText(val.value, {
-        x: parseInt(val.left),
-        y: rect.height - parseInt(val.top) - val.height / 1.2,
-        size: val.height / 1.2,
-        font: helveticaFont,
-        color: rgb(0.95, 0.1, 0.1),
-        // rotate: degrees(-45),
-      });
-    });
+    // dates.forEach((val) => {
+    //   if (val.role !== "creator") return;
+    //   console.log("rect", rect);
+    //   firstPage.drawText(val.value, {
+    //     x: parseInt(val.left),
+    //     y: rect.height - parseInt(val.top) - val.height / 1.2,
+    //     size: val.height / 1.2,
+    //     font: helveticaFont,
+    //     color: rgb(0.95, 0.1, 0.1),
+    //     // rotate: degrees(-45),
+    //   });
+    // });
 
-    signatures.map(async (val) => {
-      if (val.role !== "creator") return;
-      let img;
-      // debugger
-      console.log('val',val)
-      if (val.type === "png") {
-        img = await pdfDoc.embedPng(val.src);
-      } else if (val.type === "jpeg") {
-        img = await pdfDoc.embedJpg(val.src);
-      }
+    // signatures.map(async (val) => {
+    //   if (val.role !== "creator") return;
+    //   let img;
+    //   // debugger
+    //   console.log("val", val);
+    //   if (val.type === "png") {
+    //     img = await pdfDoc.embedPng(val.src);
+    //   } else if (val.type === "jpeg") {
+    //     img = await pdfDoc.embedJpg(val.src);
+    //   }
 
-
-      firstPage.drawImage(img, {
-        x: parseInt(val.left),
-        y: rect.height - parseInt(val.top) - val.height,
-        width: val.width,
-        height: val.height,
-      });
-    });
+    //   firstPage.drawImage(img, {
+    //     x: parseInt(val.left),
+    //     y: rect.height - parseInt(val.top) - val.height,
+    //     width: val.width,
+    //     height: val.height,
+    //   });
+    // });
 
     const pdfBytes = await pdfDoc.save();
     loadPDF(pdfBytes);
@@ -486,7 +543,7 @@ export default function Test({ url }) {
 
   /// MAKE DB SCHEMA FOR THIS SHIT, HOW MANY TABLES R NEEDED
   /// FIND A WAY TO STORE INTERACTIVE ELEMS FOR USER
-///// MAYBE I DONT NEED 3 TYPES, MAYBE 1 WILL DO???
+  ///// MAYBE I DONT NEED 3 TYPES, MAYBE 1 WILL DO???
 
   return (
     <>
@@ -553,58 +610,194 @@ export default function Test({ url }) {
           // onClick={handleCanvasClick}
           className="border"
         />
-        {annotations.map((annotation, index) => (
-          <div
-            key={index}
-            className="group"
-            style={{
-              position: "absolute",
-              left: annotation.left,
-              top: annotation.top,
-            }}
-            onMouseDown={(event) => textonMouseDown(event, index)}
-            onMouseEnter={() => setHoveredAnnotationIndex(index)}
-            onMouseLeave={() => setHoveredAnnotationIndex(null)}
-          >
-            <input
-              className="bg-transparent border border-red-500 resize-none -trackings-[3px]"
-              style={{
-                width: `${annotation.width}px`,
-                height: `${annotation.height}px`,
-                fontSize: `${annotation.fontSize}px`,
-              }}
-              value={annotation.value}
-              onChange={(e) => handleAnnotationChange(index, e.target.value)}
-            />
-            {hoveredAnnotationIndex === index && (
-              // <div className="absolute right-0 top-0 mt-1 mr-1 p-1 bg-white border border-gray-300 rounded shadow-lg">
-              //   <button
-              //     onClick={() => handleAnnotationDelete(index)}
-              //     className="text-xs text-red-500 hover:text-red-700"
-              //   >
-              //     Delete
-              //   </button>
-              // </div>
-              <button
-                className="absolute top-0 right-0 bg-red-500 text-white p-1"
-                onClick={() => handleAnnotationDelete(index)}
+        {annotations.map((annotation, index) => {
+          if (annotation.annotationType === "text")
+            return (
+              <div
+                key={index}
+                className="group"
+                style={{
+                  position: "absolute",
+                  left: annotation.left,
+                  top: annotation.top,
+                }}
+                onMouseDown={(event) => textonMouseDown(event, index)}
+                onMouseEnter={() => setHoveredAnnotationIndex(index)}
+                onMouseLeave={() => setHoveredAnnotationIndex(null)}
               >
-                X
-              </button>
-            )}
-            {/* <div
+                <input
+                  className="bg-transparent border border-red-500 resize-none -trackings-[3px]"
+                  style={{
+                    width: `${annotation.width}px`,
+                    height: `${annotation.height}px`,
+                    fontSize: `${annotation.fontSize}px`,
+                  }}
+                  value={annotation.value}
+                  onChange={(e) =>
+                    handleAnnotationChange(index, e.target.value)
+                  }
+                />
+                {hoveredAnnotationIndex === index && (
+                  // <div className="absolute right-0 top-0 mt-1 mr-1 p-1 bg-white border border-gray-300 rounded shadow-lg">
+                  //   <button
+                  //     onClick={() => handleAnnotationDelete(index)}
+                  //     className="text-xs text-red-500 hover:text-red-700"
+                  //   >
+                  //     Delete
+                  //   </button>
+                  // </div>
+                  <button
+                    className="absolute top-0 right-0 bg-red-500 text-white p-1"
+                    onClick={() => handleAnnotationDelete(index)}
+                  >
+                    X
+                  </button>
+                )}
+                {/* <div
               className="absolute right-0 bottom-0 w-3 h-3 bg-blue-500 cursor-se-resize"
               onMouseDown={(event) => handleMouseDown(index, event, "a")}
             ></div> */}
-            <div
-              className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
-              onMouseDown={(event) => handleMouseDown(index, event, "a")}
-            >
-              <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
-            </div>
-          </div>
-        ))}
-        {signatures.map((signature, index) => (
+                <div
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                >
+                  <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
+                </div>
+              </div>
+            );
+          else if (annotation.annotationType === "signature")
+            return (
+              <div
+                key={index}
+                className="group"
+                style={{
+                  position: "absolute",
+                  left: annotation.left,
+                  top: annotation.top,
+                  width: `${annotation.width}px`,
+                  height: `${annotation.height}px`,
+                }}
+                onMouseDown={(event) => textonMouseDown(event, index)}
+                onMouseEnter={() => setHoveredAnnotationIndex(index)}
+                onMouseLeave={() => setHoveredAnnotationIndex(null)}
+                // onMouseDown={(event) => signatureOnMouseDown(event, index)}
+                // onMouseEnter={() => setHoveredSignatureIndex(index)}
+                // onMouseLeave={() => setHoveredSignatureIndex(null)}
+              >
+                <img
+                  src={annotation.value}
+                  alt="Signature"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                  }}
+                  draggable={false}
+                />
+                {/* {hoveredSignatureIndex === index && ( */}
+                {hoveredAnnotationIndex === index && (
+                  // <div className="absolute right-0 top-0 mt-1 mr-1 p-1 bg-white border border-gray-300 rounded shadow-lg">
+                  //   <button
+                  //     onClick={() => handleSignatureDelete(index)}
+                  //     className="text-xs text-red-500 hover:text-red-700"
+                  //   >
+                  //     Delete
+                  //   </button>
+                  // </div>
+                  <button
+                    className="absolute top-0 right-0 bg-red-500 text-white p-1"
+                    onClick={() => handleAnnotationDelete(index)}
+                    // onClick={() => handleSignatureDelete(index)}
+                  >
+                    X
+                  </button>
+                )}
+                {/* <div
+                  className="absolute right-0 bottom-0 w-3 h-3 bg-blue-500 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "s")}
+                ></div> */}
+                {/* <div
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "s")}
+                >
+                  <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
+                </div> */}
+                <div
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                >
+                  <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
+                </div>
+              </div>
+            );
+          else if (annotation.annotationType === "date")
+            return (
+              <div
+                key={index}
+                className="group bg-transparent hover:text-red-500"
+                style={{
+                  position: "absolute",
+                  left: annotation.left,
+                  top: annotation.top,
+                  // backgroundColor: "white",
+                  padding: "2px",
+                  // border: "1px solid black",
+                }}
+                onMouseDown={(event) => textonMouseDown(event, index)}
+                onMouseEnter={() => setHoveredAnnotationIndex(index)}
+                onMouseLeave={() => setHoveredAnnotationIndex(null)}
+                // onMouseDown={(event) => dateOnMouseDown(event, index)}
+                // onMouseEnter={() => setHoveredDateIndex(index)}
+                // onMouseLeave={() => setHoveredDateIndex(null)}
+              >
+                <input
+                  className="bg-transparent border border-red-500 resize-none -trackings-[3px]"
+                  style={{
+                    width: `${annotation.width}px`,
+                    height: `${annotation.height}px`,
+                    fontSize: `${annotation.fontSize}px`,
+                  }}
+                  readOnly="true"
+                  value={annotation.value}
+                  // onChange={(e) => handleAnnotationChange(index, e.target.value)}
+                />
+                {/* {hoveredDateIndex === index && ( */}
+                {hoveredAnnotationIndex === index && (
+                  // <div className="absolute right-0 top-0 mt-1 mr-1 p-1 bg-white border border-gray-300 rounded shadow-lg">
+                  //   <button
+                  //     onClick={() => handleDateDelete(index)}
+                  //     className="text-xs text-red-500 hover:text-red-700"
+                  //   >
+                  //     Delete
+                  //   </button>
+                  // </div>
+                  <button
+                    className="absolute top-0 right-0 bg-red-500 text-white p-1"
+                    onClick={() => handleAnnotationDelete(index)}
+                    // onClick={() => handleDateDelete(index)}
+                  >
+                    X
+                  </button>
+                )}
+                {/* <div
+                  className="absolute right-0 bottom-0 w-3 h-3 bg-blue-500 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "d")}
+                  ></div> */}
+                {/* <div
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "d")}
+                >
+                  <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
+                </div> */}
+                <div
+                  className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
+                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                >
+                  <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
+                </div>
+              </div>
+            );
+        })}
+        {/* {signatures.map((signature, index) => (
           <div
             key={index}
             className="group"
@@ -620,7 +813,7 @@ export default function Test({ url }) {
             onMouseLeave={() => setHoveredSignatureIndex(null)}
           >
             <img
-              src={signature.src}
+              src={signature.value}
               alt="Signature"
               style={{
                 width: "100%",
@@ -647,7 +840,7 @@ export default function Test({ url }) {
             {/* <div
               className="absolute right-0 bottom-0 w-3 h-3 bg-blue-500 cursor-se-resize"
               onMouseDown={(event) => handleMouseDown(index, event, "s")}
-            ></div> */}
+            ></div> * /}
             <div
               className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
               onMouseDown={(event) => handleMouseDown(index, event, "s")}
@@ -655,8 +848,8 @@ export default function Test({ url }) {
               <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
             </div>
           </div>
-        ))}
-        {dates.map((date, index) => (
+        ))} */}
+        {/* {dates.map((date, index) => (
           <div
             key={index}
             className="group bg-transparent hover:text-red-500"
@@ -679,6 +872,7 @@ export default function Test({ url }) {
                 height: `${date.height}px`,
                 fontSize: `${date.fontSize}px`,
               }}
+              readOnly="true"
               value={date.value}
               // onChange={(e) => handleAnnotationChange(index, e.target.value)}
             />
@@ -701,7 +895,7 @@ export default function Test({ url }) {
             {/* <div
               className="absolute right-0 bottom-0 w-3 h-3 bg-blue-500 cursor-se-resize"
               onMouseDown={(event) => handleMouseDown(index, event, "d")}
-              ></div> */}
+              ></div> * /}
             <div
               className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
               onMouseDown={(event) => handleMouseDown(index, event, "d")}
@@ -709,7 +903,7 @@ export default function Test({ url }) {
               <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
             </div>
           </div>
-        ))}
+        ))} */}
       </div>
     </>
   );
