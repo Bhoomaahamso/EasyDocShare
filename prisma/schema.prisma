@@ -29,6 +29,7 @@ model Field {
   description String  @default("")
   required    Boolean
   comment     String  @default("")
+  type        String
 
   attachments Attachment[]
 
@@ -48,6 +49,16 @@ model Attachment {
   size Int
   url  String
   type String
+
+  annotationType String
+  left           String
+  top            String
+  width          Int
+  height         Int
+  page           Int
+  value          String
+  imageType      String
+  role           String
 
   fieldId String
   field   Field  @relation(fields: [fieldId], references: [id])
