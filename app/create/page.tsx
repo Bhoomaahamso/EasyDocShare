@@ -1,7 +1,7 @@
 "use client";
 
-import FormElement from "@/components/elements/FormElement";
-import { useState, useEffect } from "react";
+// import FormElement from "@/components/elements/FormElement";
+import { useState, useEffect, useId, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,15 +32,27 @@ import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Test from "@/components/elements/Test";
+import { hookPropertyMap } from "next/dist/server/require-hook";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must contain at least 3 characters"),
   rname: z.string().min(2, "Name must contain at least 3 characters"),
   email: z.string().email(),
+  // type: z.string(),
   message: z.string(),
   dynamicFields: z
     .object({
       name: z.string().min(3, "Item Name must contain at least 3 characters"),
+      type: z.string(),
+      file: z.string() | undefined,
       description: z.string(),
       required: z.boolean(),
     })
@@ -63,14 +75,37 @@ function Page() {
       rname: "",
       email: "",
       message: "",
-      dynamicFields: [{ name: "", description: "", required: true }],
+      dynamicFields: [
+        {
+          name: "",
+          description: "",
+          required: true,
+          file: undefined,
+          type: "sign",
+        },
+      ],
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: hookform.control,
     name: "dynamicFields",
   });
+
+  let df: {
+    // id: string;
+    name: string;
+    description: string;
+    type: string;
+    file: string | undefined;
+    required: boolean;
+  }[] = hookform.watch("dynamicFields");
+  const [inputRef, setInputRef] = useState([
+    ...Array(df.length).fill(useRef(null)),
+  ]);
+
+  // console.log("sss", df);
+  const requireds = df.filter((v) => v.required).length;
 
   useEffect(() => {
     setView(true);
@@ -78,28 +113,32 @@ function Page() {
   if (!view) return;
   if (!user.user) return;
 
-  const df: {
-    name: string;
-    description: string;
-    required: boolean;
-  }[] = hookform.watch("dynamicFields");
-  const requireds = df.filter((v) => v.required).length;
+  const handleAppend = () => {
+    append({
+      name: "",
+      description: "",
+      required: true,
+      file: undefined,
+      type: "files",
+    });
+    setInputRef([...inputRef, useRef(null)]);
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       console.log("SUBMIT", values);
-      const res = await axios.post('/api/form', {
+      const res = await axios.post("/api/form", {
         ...values,
         userId: user?.user?.id,
         userName: user.user?.fullName || user.user?.firstName,
-        sender: user?.user?.primaryEmailAddress?.emailAddress
-      })
+        sender: user?.user?.primaryEmailAddress?.emailAddress,
+      });
       console.log("resed", {
         ...values,
-        userId: user.user.id,
-        userName: user.user?.fullName || user.user?.firstName
+        userId: user.user?.id,
+        userName: user.user?.fullName || user.user?.firstName,
       });
-      console.log('resed', res)
+      console.log("resed", res);
       toast.success("Form sent successfully");
     } catch (error) {
       console.log("ERROR", error);
@@ -107,9 +146,9 @@ function Page() {
     }
   }
   function onErr(obj: any) {
-    const messages = [];
+    const messages: string[] = [];
 
-    function traverse(obj) {
+    function traverse(obj: { key: object | string }) {
       for (const key in obj) {
         if (typeof obj[key] === "object" && obj[key] !== null) {
           traverse(obj[key]);
@@ -161,25 +200,60 @@ function Page() {
             <h2 className=" font-mediummb-2">Add Items to Checklist</h2>
 
             <div className="h-fit max-h-[350px] overflow-y-auto scrollbar-width-thin -webkit-scrollbar-none relative">
-              {fields.map((field, index) => (
+              {fields.map((ff, index) => (
                 <div
-                  key={field.id}
+                  key={ff.id}
                   className="space-y-3 mt-6 py-4 border-t-2 border-t-black"
                 >
+                  {/* {console.log("hf", ff)} */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="">
+                      <Button
+                        onClick={() => {
+                          console.log("CLG", df);
+                        }}
+                      >
+                        Joe
+                      </Button>
+                      {index + 1}. {df[index].name || "(Item Name)"}
+                    </div>
+                    <button type="button" onClick={() => remove(index)}>
+                      <CircleX color="#b61a1a" />
+                    </button>
+                  </div>
+
+                  <FormField
+                    control={hookform.control}
+                    name={`dynamicFields.${index}.type`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select
+                          {...field}
+                          onValueChange={field.onChange}
+                          defaultValue="sign"
+                        >
+                          <FormControl className="text-blue-500">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Standard File(s)" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="files">
+                              Standard File(s)
+                            </SelectItem>
+                            <SelectItem value="sign">
+                              E-Signature/Forms
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={hookform.control}
                     name={`dynamicFields.${index}.name`}
                     render={({ field }) => (
                       <FormItem className=" mb-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <FormLabel className="">
-                            {index + 1}. {field.value || "(Item Name)"}
-                          </FormLabel>
-                          <button type="button" onClick={() => remove(index)}>
-                            <CircleX color="#b61a1a" />
-                          </button>
-                        </div>
-                        {/* select */}
                         <FormLabel className="text-[#888888]">
                           Item Name
                         </FormLabel>
@@ -233,14 +307,94 @@ function Page() {
                       </FormItem>
                     )}
                   />
+                  {df[index].type === "sign" && (
+                    <FormField
+                      control={hookform.control}
+                      name={`dynamicFields.${index}.file`}
+                      render={({ field }) => (
+                        <FormItem className=" mb-2">
+                          <FormLabel className="text-[#888888] flex">
+                            Upload Document (required):
+                            {JSON.stringify(field.value)}
+                            {/* {console.log("file", field)} */}
+                          </FormLabel>
+                          <FormControl>
+                            <>
+                              {/* <Button
+                                type="button"
+                                // {...field}
+                                onClick={async (e) => {
+                                  await e.target?.childNodes[1]?.click();
+                                  // console.log(
+                                  //   "ref",
+                                  //   e.target?.childNodes[1]?.click()
+                                  // );
+                                }}
+                              >
+                                Upload */}
+                              <Input
+                                type="file"
+                                id={index}
+                                // {...field}
+                                onChange={(e) => {
+                                  let f = e.target.files[0];
+                                  console.log("will it work", f);
+                                  update(index, { ...df[index], file: f });
+                                  const reader = new FileReader();
+                                  reader.onload = function (e) {
+                                    const arrayBuffer = e.target.result;
+                                    // field.value = arrayBuffer;
+                                    // update(index,{...df[index], file: arrayBuffer})
+                                    // field.onChange(arrayBuffer)
+                                    // Now arrayBuffer contains the PDF file as an ArrayBuffer
+                                    // console.log("ar", arrayBuffer,field.value);
+                                    // You can store it or manipulate it as needed
+                                  };
+                                  reader.onerror = function (e) {
+                                    console.error("Error reading file", e);
+                                  };
+                                  reader.readAsArrayBuffer(f);
+                                }}
+                                className="!mt-0  text-[#888888]"
+                              />
+                              <label htmlFor={index}>Upload</label>
+                              {/* </Button> */}
+                              {/* {field.value && ( */}
+                              {df[index].file && (
+                                <Dialog>
+                                  <DialogTrigger>
+                                    <Button type="button"> Edit </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="w-[90%]">
+                                    {/* <DialogHeader>
+                                    <DialogTitle>
+                                      Are you absolutely sure?
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                      This action cannot be undone. This will
+                                      permanently delete your account and remove
+                                      your data from our servers.
+                                    </DialogDescription>
+                                  </DialogHeader> */}
+                                    <Test url={field.value} />
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           </div>
-       
-        {/* </div> */}
-        {/* col 2 */}
-        {/* <div className="flex flex-col items-center gap-y-8"> */}
+
+          {/* </div> */}
+          {/* col 2 */}
+          {/* <div className="flex flex-col items-center gap-y-8"> */}
           {/* list */}
           <div className="space-y-4 min-h-full w-60 p-4 bg-white">
             <h1 className="text-xl font-medium">Checklist</h1>
@@ -252,17 +406,19 @@ function Page() {
                 <h5>
                   {i + 1}. {val.name}
                 </h5>
-                {!val.required && <p className="text-[#5c77d1] bg-[#dfecfc] font-semibold rounded-full px-2">Optional</p>}
+                {!val.required && (
+                  <p className="text-[#5c77d1] bg-[#dfecfc] font-semibold rounded-full px-2">
+                    Optional
+                  </p>
+                )}
               </div>
             ))}
           </div>
-             {/* button */}
-             <Button
+          {/* button */}
+          <Button
             className="bg-[#1c2dd6] w-fit ml-8"
             type="button"
-            onClick={() => {
-              append({ name: "", description: "", required: true });
-            }}
+            onClick={handleAppend}
           >
             Add Item +
           </Button>
@@ -325,7 +481,10 @@ function Page() {
                   </div>
                 </div>
                 <DialogFooter className="flex flex-row justify-between">
-                  <Button className="bg-[#1c2dd6]" onClick={hookform.handleSubmit(onSubmit, onErr)}>
+                  <Button
+                    className="bg-[#1c2dd6]"
+                    onClick={hookform.handleSubmit(onSubmit, onErr)}
+                  >
                     Send
                   </Button>
                 </DialogFooter>

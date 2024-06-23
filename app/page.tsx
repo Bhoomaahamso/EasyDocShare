@@ -68,9 +68,9 @@ export default function Home() {
             </div>
           </div>
         </div> */}
-        <Test url={'/Version_3_Lucky.pdf'} />
+        {/* <Test url={'/Version_3_Lucky.pdf'} /> */}
         {/* <PdfViewer url={'/Version_3_Lucky.pdf'} /> */}
-        {/* {data && <DataTable columns={columns} data={data} />} */}
+        {data && <DataTable columns={columns} data={data} />}
       </div>
     </div>
   );

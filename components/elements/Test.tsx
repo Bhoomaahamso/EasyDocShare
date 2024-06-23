@@ -7,7 +7,7 @@ import React, {
   CanvasHTMLAttributes,
 } from "react";
 import { Button } from "../ui/button";
-import { MoveDiagonal2 } from "lucide-react";
+import { MoveDiagonal2, Pencil } from "lucide-react";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 let pdfjsLib;
 import("pdfjs-dist/webpack.mjs").then((val) => (pdfjsLib = val));
@@ -23,7 +23,6 @@ export default function Test({ url }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [coords, setCoords] = useState({ x: 0, y: 0 });
-
   useEffect(() => {
     const hmm = (event) => {
       const { clientX, clientY } = event;
@@ -38,6 +37,24 @@ export default function Test({ url }) {
       window.removeEventListener("mousemove", hmm);
     };
   }, []);
+
+  const getArrayBuffer = async (url) => {
+    console.log('URL:-', url);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const arrayBuffer = e.target.result;
+        resolve(arrayBuffer);
+      };
+
+      reader.onerror = function (e) {
+        reject("Error reading file", e);
+      };
+
+      reader.readAsArrayBuffer(url);
+    });
+  };
 
   const renderPage = async () => {
     if (!pdf) return;
@@ -60,12 +77,10 @@ export default function Test({ url }) {
 
   const loadPDF = async (pdfSource) => {
     if (!pdfjsLib) return;
-    const pdf =
-      typeof pdfSource === "string"
-        ? await pdfjsLib.getDocument(pdfSource).promise
-        : await pdfjsLib.getDocument({ data: pdfSource }).promise;
+    const data = pdfSource instanceof File ? await getArrayBuffer(pdfSource): pdfSource;
+    const pdf = await pdfjsLib.getDocument({ data: data }).promise;
 
-    console.log("THE PDF", pdf);
+    console.log("THE PDF", pdf, pdfSource);
     setPdf(pdf);
     renderPage();
     // // const page = await pdf.getPage(1);
@@ -113,6 +128,21 @@ export default function Test({ url }) {
   };
 
   const handleSignatureClick = (event, role) => {
+    if (role === "user") {
+      const newSignature = {
+        annotationType: "signature",
+        left: "50px",
+        top: "200px",
+        width: 200,
+        height: 200,
+        value: "",
+        imageType: "",
+        page: currentPage,
+        role,
+      };
+      setAnnotations([...annotations, newSignature]);
+      return;
+    }
     const rect = canvasRef.current.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -135,14 +165,59 @@ export default function Test({ url }) {
               annotationType: "signature",
               left: "50px",
               top: "200px",
-              width: img.width / 4,
-              height: img.height / 4,
+              width: 200,
+              height: 200,
               value: img.src,
               imageType: match[1],
               page: currentPage,
               role,
             };
             setAnnotations([...annotations, newSignature]);
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    fileInput.click();
+  };
+
+  const editSignature = (event, index) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const regex = /data:image\/(png|jpeg);base64/;
+          const match = e.target.result?.slice(0, 30).match(regex);
+
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = (e) => {
+            const updatedAnnotations = annotations.map((annotation, i) =>
+              i === index
+                ? { ...annotation, value: img.src, imageType: match[1] }
+                : annotation
+            );
+            setAnnotations(updatedAnnotations);
+            // const newSignature = {
+            //   annotationType: "signature",
+            //   left: "50px",
+            //   top: "200px",
+            //   width: 200,
+            //   height: 200,
+            //   value: img.src,
+            //   imageType: match[1],
+            //   page: currentPage,
+            //   role,
+            // };
+            // setAnnotations([...annotations, newSignature]);
           };
         };
         reader.readAsDataURL(file);
@@ -210,6 +285,21 @@ export default function Test({ url }) {
   };
 
   const handleDateClick = (event, role) => {
+    if (role === "user") {
+      const newDate = {
+        annotationType: "date",
+        left: "100px",
+        top: "100px",
+        width: 100,
+        height: 20,
+        value: "",
+        imageType: "",
+        page: currentPage,
+        role,
+      };
+      setAnnotations([...annotations, newDate]);
+      return;
+    }
     const rect = canvasRef.current.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -243,6 +333,26 @@ export default function Test({ url }) {
     };
   };
 
+  const editDate = (event, index) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.onchange = (e) => {
+      handleAnnotationChange(index, e.target.value);
+      document.body.removeChild(dateInput);
+    };
+    dateInput.style.position = "absolute";
+    dateInput.style.left = `${100 + scrollX + rect.left}px`;
+    dateInput.style.top = `${100 + scrollY + rect.top}px`;
+    dateInput.type = "date";
+    document.body.appendChild(dateInput);
+    dateInput.focus();
+    dateInput.showPicker();
+    console.log("DATTE", dateInput.style.top, scrollY);
+  };
+
   const handleAnnotationChange = (index, value) => {
     const updatedAnnotations = annotations.map((annotation, i) =>
       i === index ? { ...annotation, value } : annotation
@@ -255,7 +365,7 @@ export default function Test({ url }) {
     setAnnotations(updatedAnnotations);
   };
 
-  const handleMouseDown = (index, event, type) => {
+  const handleMouseDown = (index, event) => {
     setResizingIndex(index);
     setResizeStart({
       startX: event.clientX,
@@ -319,12 +429,12 @@ export default function Test({ url }) {
   });
 
   const print = async () => {
-    console.log("aMM", annotations);
-    const existingPdfBytes = await fetch(url).then((res) => res.arrayBuffer());
-
+    console.log("aMM", annotations, url,existingPdfBytes, pdfDoc);
+    const existingPdfBytes = await getArrayBuffer(url);
+    
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
+    
     const pages = pdfDoc.getPages();
     const firstPage = pages[0];
     // const { width, height } = firstPage.getSize();
@@ -377,9 +487,10 @@ export default function Test({ url }) {
   /// FIND A WAY TO STORE INTERACTIVE ELEMS FOR USER
   /// MAYBE I DONT NEED 3 TYPES, MAYBE 1 WILL DO???  ✔️
   /// HANDLE FOR MULTIPLE PAGES ✔️
+  /// MAKE UI FOR FORM PDF
 
   return (
-    <>
+    <div className="flex min-w-fit">
       <div className="w-fit min-w-32 h-96 mx-8">
         <div className="flex flex-col">
           <Button onClick={prevPage}>prev</Button>
@@ -448,6 +559,9 @@ export default function Test({ url }) {
                   position: "absolute",
                   left: annotation.left,
                   top: annotation.top,
+                  backgroundColor: `${
+                    annotation.role === "user" ? "blue" : ""
+                  }`,
                 }}
                 onMouseDown={(event) => textonMouseDown(event, index)}
                 onMouseEnter={() => setHoveredAnnotationIndex(index)}
@@ -461,9 +575,11 @@ export default function Test({ url }) {
                     fontSize: `${annotation.fontSize}px`,
                   }}
                   value={annotation.value}
-                  onChange={(e) =>
-                    handleAnnotationChange(index, e.target.value)
-                  }
+                  readOnly={annotation.role === "user"}
+                  onChange={(e) => {
+                    annotation.role === "creator" &&
+                      handleAnnotationChange(index, e.target.value);
+                  }}
                 />
                 {hoveredAnnotationIndex === index && (
                   <button
@@ -475,7 +591,7 @@ export default function Test({ url }) {
                 )}
                 <div
                   className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
-                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                  onMouseDown={(event) => handleMouseDown(index, event)}
                 >
                   <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
                 </div>
@@ -492,20 +608,25 @@ export default function Test({ url }) {
                   top: annotation.top,
                   width: `${annotation.width}px`,
                   height: `${annotation.height}px`,
+                  backgroundColor: `${
+                    annotation.role === "user" ? "blue" : ""
+                  }`,
                 }}
                 onMouseDown={(event) => textonMouseDown(event, index)}
                 onMouseEnter={() => setHoveredAnnotationIndex(index)}
                 onMouseLeave={() => setHoveredAnnotationIndex(null)}
               >
-                <img
-                  src={annotation.value}
-                  alt="Signature"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  draggable={false}
-                />
+                {annotation.role === "creator" && (
+                  <img
+                    src={annotation.value}
+                    alt="Signature"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    draggable={false}
+                  />
+                )}
                 {hoveredAnnotationIndex === index && (
                   <button
                     className="absolute top-0 right-0 bg-red-500 text-white p-1"
@@ -514,9 +635,18 @@ export default function Test({ url }) {
                     X
                   </button>
                 )}
+                {hoveredAnnotationIndex === index &&
+                  annotation.role === "creator" && (
+                    <div
+                      className="absolute bottom-0 left-0 bg-yellow-500 text-white p-1 cursor-pointer"
+                      onClick={(e) => editSignature(e, index)}
+                    >
+                      <Pencil size={12} strokeWidth={1} />
+                    </div>
+                  )}
                 <div
                   className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
-                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                  onMouseDown={(event) => handleMouseDown(index, event)}
                 >
                   <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
                 </div>
@@ -531,7 +661,9 @@ export default function Test({ url }) {
                   position: "absolute",
                   left: annotation.left,
                   top: annotation.top,
-                  // backgroundColor: "white",
+                  backgroundColor: `${
+                    annotation.role === "user" ? "blue" : ""
+                  }`,
                   padding: "2px",
                   // border: "1px solid black",
                 }}
@@ -557,9 +689,18 @@ export default function Test({ url }) {
                     X
                   </button>
                 )}
+                {hoveredAnnotationIndex === index &&
+                  annotation.role === "creator" && (
+                    <div
+                      className="absolute bottom-0 left-0 bg-yellow-500 text-white p-1 cursor-pointer"
+                      onClick={(e) => editDate(e, index)}
+                    >
+                      <Pencil size={12} strokeWidth={1} />
+                    </div>
+                  )}
                 <div
                   className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
-                  onMouseDown={(event) => handleMouseDown(index, event, "a")}
+                  onMouseDown={(event) => handleMouseDown(index, event)}
                 >
                   <MoveDiagonal2 size={12} color="#ffffff" strokeWidth={1.5} />
                 </div>
@@ -567,6 +708,6 @@ export default function Test({ url }) {
             );
         })}
       </div>
-    </>
+    </div>
   );
 }
