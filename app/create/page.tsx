@@ -135,6 +135,7 @@ data-body {
 
 */
 // need annotations array
+// let fileType = new File(['blob'], 'name')
 
 const dynamicFieldsSchema = z
   .object({
@@ -150,19 +151,10 @@ const dynamicFieldsSchema = z
       imageType: z.string(),
       page: z.number(),
       role: z.string(),
-    })),
-    // file: z.instanceof(File),
-    file: z.custom(
-      (data) => {
-        if (typeof File !== "undefined" && data instanceof File) {
-          return true;
-        }
-        return false;
-      },
-      {
-        message: "Expected instance of File",
-      }
-    ),
+    })).optional(),
+
+    file:  z.instanceof(globalThis.File).optional(),
+   
     description: z.string(),
     required: z.boolean(),
   })
@@ -170,7 +162,33 @@ const dynamicFieldsSchema = z
   .min(1, "Please add at least one item to the form.")
   .refine((fields) => fields.some((field) => field.required), {
     message: "At least one field must be marked as required.",
-  });
+  })
+  .superRefine((data, ctx) => {
+    console.log('dataaaaaaaaaaaaaaa', data)
+   const {type, file} = data;
+   //what is this shit????
+  //  if (type === 'sign' && !( file instanceof File)) {
+  //   ctx.addIssue( {
+  //     code: z.ZodIssueCode.too_small,
+  //     minimum: min,
+  //     type: 'number',
+  //     inclusive: true,
+  //     message: `Height must be greater than ${ min }`,
+  // } )
+  // }/
+  })
+  /// try this approach
+  // .superRefine((data, ctx) => {
+  //   data.forEach((item, index) => {
+  //     if (item.type === 'sign' && !(item.file instanceof File)) {
+  //       ctx.addIssue({
+  //         code: z.ZodIssueCode.custom,
+  //         message: `File is required for signature items`,
+  //         path: [index, 'file']
+  //       });
+  //     }
+  //   });
+  // })
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must contain at least 3 characters"),
@@ -183,7 +201,10 @@ const formSchema = z.object({
 
 function Page() {
   const [view, setView] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [annotations, setAnnotations] = useState([]);
+  const [dateCollector, setDateCollector] = useState([]);  
   const user = useUser();
 
   const hookform = useForm<z.infer<typeof formSchema>>({
@@ -203,6 +224,8 @@ function Page() {
         },
       ],
     },
+    mode: "onBlur",
+    reValidateMode: "onBlur"
   });
 
   const { fields, append, remove, update } = useFieldArray({
@@ -228,24 +251,90 @@ function Page() {
       required: true,
       file: undefined,
       type: "files",
+      annotations: [],
     });
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       console.log("SUBMIT", values);
-      const res = await axios.post("/api/form", {
-        ...values,
-        annotations: annotations,
-        userId: user?.user?.id,
-        userName: user.user?.fullName || user.user?.firstName,
-        sender: user?.user?.primaryEmailAddress?.emailAddress,
-      });
-      console.log("resed", {
-        ...values,
-        userId: user.user?.id,
-        userName: user.user?.fullName || user.user?.firstName,
-      });
+      /*
+      {
+  title: 'test',
+  rname: 'ggggg',
+  email: 'john4@gmail.com',
+  message: 'Custom Message',
+  dynamicFields: [{
+      name: 'Item One',
+      type: 'sign',
+      annotations: [{
+          annotationType: 'text',
+          left: '370px',
+          top: '428px',
+          width: 100,
+          height: 20,
+          value: 'fff',
+          imageType: '',
+          page: 1,
+          role: 'creator'
+        },
+        {
+          annotationType: 'text',
+          left: '50px',
+          top: '150px',
+          width: 100,
+          height: 20,
+          value: '',
+          imageType: '',
+          page: 1,
+          role: 'user'
+        }
+      ],
+      file: File {
+        name: '49 26.pdf',
+        lastModified: 1737321566195,
+        lastModifiedDate: new Date('2025-01-19T21:19:26.000Z'),
+        webkitRelativePath: '',
+        size: 49016,
+        type: 'application/pdf'
+      },
+      description: 'fff',
+      required: true
+    }
+  ]
+}
+      */
+      const formData = new FormData();
+//debugger;
+values.dynamicFields.forEach((value, index) => { 
+  formData.append(`dynamicFields[${index}]`, value.file);
+})
+
+formData.append("userInfo", JSON.stringify(  {
+    ...values,
+    // annotations: annotations,
+    userId: user?.user?.id,
+    userName: user.user?.fullName || user.user?.firstName,
+    sender: user?.user?.primaryEmailAddress?.emailAddress,
+  }));
+
+console.log('formData', formData);
+// return;
+      const res = await axios.post("/api/form",
+        formData
+      //   {
+      //   ...values,
+      //   // annotations: annotations,
+      //   userId: user?.user?.id,
+      //   userName: user.user?.fullName || user.user?.firstName,
+      //   sender: user?.user?.primaryEmailAddress?.emailAddress,
+      // }
+    );
+      // console.log("resed", {
+      //   ...values,
+      //   userId: user.user?.id,
+      //   userName: user.user?.fullName || user.user?.firstName,
+      // });
 
       console.log("resed", res);
       toast.success("Form sent successfully");
@@ -271,6 +360,22 @@ function Page() {
     messages.forEach((i) => toast.error(i, { duration: 5000 }));
     console.log("ONerrr", messages, obj);
   }
+
+  const handleOpenChange = (open) => {
+    console.log('open',open,dateCollector);
+    if(!open) {
+      dateCollector.forEach(dateId =>{
+        const dateInput = document.getElementById(dateId);
+        if (dateInput) {
+          dateInput.remove(); // Synchronously removes the element from the DOM
+        }
+      });
+      setDateCollector([]);
+    } else {
+      setPdfLoading(true);
+    }
+
+  };
 
   const handleSave = (index: number, bytes: File) => {
     // update(index, { ...df[index], file: bytes });
@@ -333,7 +438,7 @@ function Page() {
                           >
                             Joe
                           </Button>
-                          {index + 1}. {df[index].name || "(Item Name)"}
+                          {index + 1}. {df[index]?.name || "(Item Name)"}
                         </div>
                         <button type="button" onClick={() => remove(index)}>
                           <CircleX color="#b61a1a" />
@@ -457,11 +562,16 @@ function Page() {
                                       Upload
                                       <Input
                                         type="file"
+                                        accept=".pdf,application/pdf"
                                         // id={index}
                                         // {...field}
                                         onChange={(e) => {
                                           let f = e.target?.files?.[0];
                                           console.log("will it work", f);
+                                          if(f?.type !== 'application/pdf'){
+                                            toast.error('Only PDF files are allowed')
+                                            return;
+                                          }
                                           update(index, {
                                             ...df[index],
                                             file: f,
@@ -491,7 +601,7 @@ function Page() {
                                   </Button>
                                   {/* {field.value && ( */}
                                   {df[index].file && (
-                                    <Dialog>
+                                    <Dialog onOpenChange={handleOpenChange}>
                                       <DialogTrigger>
                                         <Button type="button"> Edit </Button>
                                       </DialogTrigger>
@@ -506,12 +616,17 @@ function Page() {
                                       your data from our servers.
                                     </DialogDescription>
                                   </DialogHeader> */}
-                                        <Test
+<p>mmm</p>
+                                       <Test
                                           url={field.value}
                                           annotations={annotations}
                                           setAnnotations={setAnnotations}
+                                          setDateCollector={setDateCollector}
+                                          pdfLoading={pdfLoading}
+                                          setPdfLoading={setPdfLoading}
                                           pdfIndex={index}
                                           onSave={handleSave}
+                                          mode="create"
                                         />
                                       </DialogContent>
                                     </Dialog>
@@ -541,7 +656,7 @@ function Page() {
               {df.map((val, i) => (
                 <div key={i} className="flex justify-between">
                   <h5>
-                    {i + 1}. {val.name}
+                    {i + 1}. {val?.name}
                   </h5>
                   {!val.required && (
                     <p className="text-[#5c77d1] bg-[#dfecfc] font-semibold rounded-full px-2">
@@ -561,10 +676,16 @@ function Page() {
             </Button>
             {/* btn */}
             <div className="text-center">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline">Continue</Button>
-                </DialogTrigger>
+              {/* <Dialog open={open} onOpenChange={setOpen}> */}
+              <Dialog open={open} onOpenChange={setOpen}>
+                {/* <DialogTrigger > */}
+                  <Button variant="outline" type="button" onClick={async()=>{
+                    console.log('hk',hookform);
+                   // debugger;
+                    const res = await hookform?.trigger(["title"]);
+                    console.log('res:', res)
+                    if(res){ setOpen(true)}}}>Continue</Button>
+                {/* </DialogTrigger> */}
                 <DialogContent className="sm:maxi-w-[425px]">
                   <DialogHeader>
                     <DialogTitle>Settings</DialogTitle>

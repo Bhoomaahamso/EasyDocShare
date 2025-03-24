@@ -31,6 +31,10 @@ model Field {
   comment     String  @default("")
   type        String
 
+  docName String? 
+  docKey String?
+  docUrl String?
+
   attachments Attachment[]
 
   documentId String
@@ -44,21 +48,21 @@ model Field {
 
 model Attachment {
   id   String @id @default(uuid())
-  name String
-  key  String
-  size Int
-  url  String
-  type String
+  name String?
+  key  String?
+  size Int?
+  url  String?
+  type String?
 
-  annotationType String
-  left           String
-  top            String
-  width          Int
-  height         Int
-  page           Int
-  value          String
-  imageType      String
-  role           String
+  annotationType String?
+  left           String?
+  top            String?
+  width          Int?
+  height         Int?
+  page           Int?
+  value          String?
+  imageType      String?
+  role           String?
 
   fieldId String
   field   Field  @relation(fields: [fieldId], references: [id])

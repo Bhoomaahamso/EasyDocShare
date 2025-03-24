@@ -23,21 +23,29 @@ interface annon {
   value: string;
   imageType: string;
   page: number;
-  role: string;
+  role: "creator" | "user";
 }
 
 export default function Test({
   url,
   annotations,
   setAnnotations,
+  setDateCollector,
+  pdfLoading,
+  setPdfLoading,
   pdfIndex,
   onSave,
+  mode="fill",
 }: {
   url: File;
   annotations: (annon & { fontSize: number })[];
   setAnnotations: Function;
+  setDateCollector: Function;
+  pdfLoading: boolean;
+  setPdfLoading: Function;
   pdfIndex: number;
   onSave: Function;
+  mode: "create" | "fill";
 }) {
   // debugger;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,6 +55,9 @@ export default function Test({
   const pdf = useRef<({} & { numPages: number; getPage: Function }) | null>(
     null
   );
+  const lastRenderRef = useRef<{ pageNumber: number | null; viewport?: { width: number; height: number } }>({
+    pageNumber: null,
+  });
 
   // const [pdf, setPdf] = useState();
   const [pdfd, setPdfd] = useState(url);
@@ -116,14 +127,32 @@ export default function Test({
     // const page = await pdf.getPage(1);
     const page = await pdf.current.getPage(currentPage);
     // const viewport = page.getViewport({ scale: 1.5 });
-    debugger;
+    //debugger;
     const viewport = page.getViewport({ scale: 1 });
+    console.log('lastRenderRef.current:', lastRenderRef.current, canvasRef.current)
+    if (
+      lastRenderRef.current.pageNumber === currentPage &&
+      lastRenderRef.current.viewport &&
+      lastRenderRef.current.viewport.width === viewport.width &&
+      lastRenderRef.current.viewport.height === viewport.height 
+
+    ) {
+      console.log("Render parameters unchanged, skipping render.");
+      return; // Skip rendering if nothing has changed.
+    }
+  
+    // Save the current render parameters for future comparison.
+    lastRenderRef.current = { pageNumber: currentPage, viewport: { width: viewport.width, height: viewport.height } };
+  
     console.log("likk");
+
     const canvas = canvasRef.current;
+    console.log('canvas:', canvas)
     if (!canvas) return;
     const context = canvas.getContext("2d");
+    console.log('context:', context)
     if (!context) {
-      debugger;
+     // debugger;
     }
     canvas.height = viewport.height;
     canvas.width = viewport.width;
@@ -132,12 +161,14 @@ export default function Test({
       canvasContext: context,
       viewport,
     };
+    console.log('context here:',pdf.current, context, page)
     await page.render(renderContext).promise;
+    // setPdfLoading(false);
   };
 
   const loadPDF = async (pdfSource: File) => {
     if (!pdfjsLib) return;
-    debugger;
+    //debugger;
     console.log("pdfd", pdfd);
     // const data = await getArrayBuffer(pdfd);
     const data = await getArrayBuffer(pdfSource);
@@ -154,6 +185,7 @@ export default function Test({
     console.log("THE PDF", pdf, pdfSource, typeof pdf);
     // setPdf(pdf);
     renderPage();
+    // setPdfLoading(false);
     // // const page = await pdf.getPage(1);
     // const page = await pdf.getPage(currentPage);
     // // const viewport = page.getViewport({ scale: 1.5 });
@@ -173,7 +205,7 @@ export default function Test({
 
   useEffect(() => {
     console.log("curr page changed");
-    // renderPage();
+    renderPage();
   }, [currentPage]);
 
   useEffect(() => {
@@ -299,6 +331,7 @@ export default function Test({
                   : annotation
             );
             setAnnotations(updatedAnnotations);
+            console.log('updatedAnnotations:', updatedAnnotations)
             // const newSignature = {
             //   annotationType: "signature",
             //   left: "50px",
@@ -323,6 +356,7 @@ export default function Test({
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
     index: number
   ) => {
+    if(mode === "fill") return;
     let offsetX, offsetY;
     let isDragging = false;
     let startX, startY;
@@ -408,6 +442,9 @@ export default function Test({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const dateInput = document.createElement("input");
+    const time = Date.now();
+    dateInput.id = `date-${time}`;
+    setDateCollector(prev => [...prev, dateInput.id]);
     dateInput.type = "date";
     dateInput.onchange = (e) => {
       const target = e.target as HTMLInputElement;
@@ -448,6 +485,9 @@ export default function Test({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const dateInput = document.createElement("input");
+    const time = Date.now();
+    dateInput.id = `date-${time}`;
+    setDateCollector(prev => [...prev, dateInput.id]);
     dateInput.type = "date";
     dateInput.onchange = (e: Event) => {
       const target = e.target as HTMLInputElement;
@@ -537,6 +577,7 @@ export default function Test({
   // }, [annotations]);
 
   useEffect(() => {
+    if(mode === "fill") return;
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
     return () => {
@@ -604,7 +645,7 @@ export default function Test({
         });
       }
     });
-    debugger;
+   // debugger;
     const pdfBytes = await pdfDoc.save();
     // const newFile = arrayBufferToFile(pdfBytes, `${Date.now()}.pdf`, "application/pdf");
     const newFile = arrayBufferToFile(
@@ -626,10 +667,13 @@ export default function Test({
     console.log("PDF", pdfBytes);
   };
 
-  const nextPage = () =>
-    pdf?.current?.numPages &&
-    currentPage < pdf.current.numPages &&
-    setCurrentPage(currentPage + 1);
+  const nextPage = () =>{
+    if(pdf?.current?.numPages &&
+    currentPage < pdf.current.numPages) {
+      setCurrentPage(currentPage + 1);
+      
+    }
+  }
 
   const prevPage = () =>
     pdf && currentPage > 1 && setCurrentPage(currentPage - 1);
@@ -712,11 +756,13 @@ export default function Test({
       </div>
 
       <div ref={containerRef} className="relative">
-        <canvas ref={canvasRef} className="border" />
+        {/* {!pdfLoading && <canvas ref={canvasRef} className="border" />} */}
+         <canvas ref={canvasRef} className="border" />
         {annotations.map(
           (annotation: (typeof annotations)[0], index: number) => {
             if (annotation.page !== currentPage) return;
             if (isPreview && annotation.role === "creator") return;
+            if (mode === "fill" && annotation.role === "creator") return;
             if (annotation.annotationType === "text")
               return (
                 <div
@@ -727,7 +773,7 @@ export default function Test({
                     left: annotation.left,
                     top: annotation.top,
                     backgroundColor: `${
-                      annotation.role === "user" ? "blue" : ""
+                      annotation.role === "user" && mode === "create" ? "blue" : ""
                     }`,
                   }}
                   onMouseDown={(event) =>
@@ -744,13 +790,15 @@ export default function Test({
                       fontSize: `${annotation.fontSize}px`,
                     }}
                     value={annotation.value}
-                    readOnly={annotation.role === "user"}
+                    readOnly={annotation.role === "user" && mode === "create"}
                     onChange={(e) => {
-                      annotation.role === "creator" &&
+                      console.log('l')
+                      if(annotation.role === "user" && mode === "create") return;
+                      // annotation.role === "creator" &&
                         handleAnnotationChange(index, e.target.value);
                     }}
                   />
-                  {hoveredAnnotationIndex === index && !isPreview && (
+                  {hoveredAnnotationIndex === index && mode === "create" && !isPreview && (
                     <button
                       className="absolute top-0 right-0 bg-red-500 text-white p-1"
                       onClick={() => handleAnnotationDelete(index)}
@@ -758,7 +806,7 @@ export default function Test({
                       X
                     </button>
                   )}
-                  {!isPreview && (
+                  {!isPreview && mode === "create" && (
                     <div
                       className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
                       onMouseDown={(event) => handleMouseDown(index, event)}
@@ -784,8 +832,9 @@ export default function Test({
                     width: `${annotation.width}px`,
                     height: `${annotation.height}px`,
                     backgroundColor: `${
-                      annotation.role === "user" ? "blue" : ""
+                      annotation.role === "user" && mode === "create" ? "blue" : ""
                     }`,
+                    border: "2px solid black",
                   }}
                   onMouseDown={(event) =>
                     !isPreview && textonMouseDown(event, index)
@@ -793,18 +842,20 @@ export default function Test({
                   onMouseEnter={() => setHoveredAnnotationIndex(index)}
                   onMouseLeave={() => setHoveredAnnotationIndex(null)}
                 >
-                  {annotation.role === "creator" && (
+                  {/* {annotation.role === "creator" && ( */}
+                  {((annotation.role === "creator" && mode === "create") ||(annotation.role === "user" && mode === "fill")) && (
                     <img
                       src={annotation.value}
                       alt="Signature"
                       style={{
                         width: "100%",
                         height: "100%",
+                        border: "2px solid black",
                       }}
                       draggable={false}
                     />
                   )}
-                  {hoveredAnnotationIndex === index && !isPreview && (
+                  {hoveredAnnotationIndex === index && mode === "create" && !isPreview && (
                     <button
                       className="absolute top-0 right-0 bg-red-500 text-white p-1"
                       onClick={() => handleAnnotationDelete(index)}
@@ -813,8 +864,9 @@ export default function Test({
                     </button>
                   )}
                   {hoveredAnnotationIndex === index &&
+                  ((annotation.role === "creator" && mode === "create") ||(annotation.role === "user" && mode === "fill")) &&
                     !isPreview &&
-                    annotation.role === "creator" && (
+                     (
                       <div
                         className="absolute bottom-0 left-0 bg-yellow-500 text-white p-1 cursor-pointer"
                         onClick={(e) => editSignature(e, index)}
@@ -822,7 +874,7 @@ export default function Test({
                         <Pencil size={12} strokeWidth={1} />
                       </div>
                     )}
-                  {!isPreview && (
+                  {!isPreview && mode === "create" && (
                     <div
                       className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
                       onMouseDown={(event) => handleMouseDown(index, event)}
@@ -846,7 +898,7 @@ export default function Test({
                     left: annotation.left,
                     top: annotation.top,
                     backgroundColor: `${
-                      annotation.role === "user" ? "blue" : ""
+                      annotation.role === "user" && mode === "create" ? "blue" : ""
                     }`,
                     padding: "2px",
                     // border: "1px solid black",
@@ -867,7 +919,7 @@ export default function Test({
                     // readOnly="true"
                     value={annotation.value}
                   />
-                  {hoveredAnnotationIndex === index && !isPreview && (
+                  {hoveredAnnotationIndex === index && mode === "create" && !isPreview && (
                     <button
                       className="absolute top-0 right-0 bg-red-500 text-white p-1"
                       onClick={() => handleAnnotationDelete(index)}
@@ -877,7 +929,7 @@ export default function Test({
                   )}
                   {hoveredAnnotationIndex === index &&
                     !isPreview &&
-                    annotation.role === "creator" && (
+                    ((annotation.role === "creator" && mode === "create") ||(annotation.role === "user" && mode === "fill")) && (
                       <div
                         className="absolute bottom-0 left-0 bg-yellow-500 text-white p-1 cursor-pointer"
                         onClick={(e) => editDate(e, index)}
@@ -885,7 +937,7 @@ export default function Test({
                         <Pencil size={12} strokeWidth={1} />
                       </div>
                     )}
-                  {!isPreview && (
+                  {!isPreview && mode === "create" && (
                     <div
                       className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 cursor-se-resize"
                       onMouseDown={(event) => handleMouseDown(index, event)}

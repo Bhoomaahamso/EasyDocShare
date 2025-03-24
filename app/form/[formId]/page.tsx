@@ -25,14 +25,30 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { CircleX, Cross, CrossIcon, MessageCircleWarning } from "lucide-react";
+import {
+  Check,
+  CircleX,
+  Cross,
+  CrossIcon,
+  FileType,
+  MessageCircleWarning,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
-import { UploadDropzone } from "@/utils/uploadthing";
+//import { UploadDropzone } from "@/ /uploadthing";
 import { Field } from "@prisma/client";
 import { toast } from "sonner";
+
+import {
+  generateUploadButton,
+  generateUploadDropzone,
+} from "@uploadthing/react";
+import type { OurFileRouter } from "@/app/api/uploadthing/core";
+import Test from "@/components/elements/Test";
+export const UploadButton = generateUploadButton<OurFileRouter>();
+export const UploadDropzone = generateUploadDropzone<OurFileRouter>();
 
 const formSchema = z.object({
   dynamicFields: z
@@ -50,6 +66,7 @@ function Page({ params }: { params: { formId: string } }) {
   const [selected, setSelected] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [files, setFiles] = useState([]);
+  const [dateCollector, setDateCollector] = useState([]);  
 
   const { userId } = useAuth();
   const idd = params.formId;
@@ -62,9 +79,25 @@ function Page({ params }: { params: { formId: string } }) {
       try {
         const res = await axios("/api/form/" + idd);
         // const data = JSON.parse(JSON.stringify(res.data))
-        // res.data.fields.forEach((field) => (field.attachments = []));
-        console.log("found", res);
-        return res.data;
+        console.log("found", res.data);
+        let val = res.data;
+        for (const field of val.fields) {
+          if (field.type === "sign") {
+            let url = field.docUrl;
+            const response = await fetch(url);
+            const blob = await response.blob();
+
+            const file = new File([blob], "downloaded.pdf", {
+              type: "application/pdf",
+            });
+            console.log(file);
+
+            field.file = file; // Assign file properly
+          }
+        }
+        console.log("m,", val);
+        return val;
+        //  return res.data;
       } catch (error) {
         console.log("def error", error);
       }
@@ -106,9 +139,38 @@ function Page({ params }: { params: { formId: string } }) {
     );
   };
 
+  // console.log('init anno',hookform.getValues().fields?.[0]?.attachments)
+  console.log("init anno", hookform.getValues().fields);
+  const [annotations, setAnnotations] = useState(
+    hookform.getValues().fields?.[0]?.attachments || []
+  );
+
+  const getAnnotations = () => {
+    if(JSON.stringify(annotations) === JSON.stringify(hookform.getValues().fields?.[selected]?.attachments)){
+      return annotations;
+    } else {
+      setAnnotations(hookform.getValues().fields?.[selected]?.attachments);
+      return hookform.getValues().fields?.[selected]?.attachments;
+    }
+  }
+  const handleOpenChange = (open) => {
+    console.log('open',open,dateCollector);
+    if(!open) {
+      dateCollector.forEach(dateId =>{
+        const dateInput = document.getElementById(dateId);
+        if (dateInput) {
+          dateInput.remove(); // Synchronously removes the element from the DOM
+        }
+      });
+      setDateCollector([]);
+    }
+  };
+
   if (!view) return;
 
+  // const df: Field[] = hookform.watch("dynamicFields");
   const df: Field[] = hookform.watch("fields");
+  console.log('df:', df)
   const requireds = df?.filter((v) => v.required).length;
   const done = df?.filter((v) => v.required && v.attachments.length > 0).length;
 
@@ -148,6 +210,9 @@ function Page({ params }: { params: { formId: string } }) {
                 {hookform.getValues().fields?.[selected].description}
               </h3>
             </div>
+            {hookform.getValues().fields?.[selected].type === "files" ? (
+              // {/* standard files */}
+              <>
             <UploadDropzone
               className="h-[400px] cursor-pointer"
               endpoint="imageUploader"
@@ -204,6 +269,52 @@ function Page({ params }: { params: { formId: string } }) {
                 );
               })}
             </div>
+            </>
+            ) : (
+              /// {/* e sign */}
+              <div className="w-full h-96 grid place-items-center">
+                <div className="grid place-items-center gap-4 w-fit">
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      console.log(
+                        "q",
+                        Date.now(),
+                        selected,
+                        hookform.getValues().fields?.[selected]
+                      )
+                    }
+                  >
+                    nnnn - s{selected} - a{annotations?.length} - hf{hookform.getValues().fields?.[selected]?.attachments.length}
+                  </Button>
+                  <Dialog onOpenChange={handleOpenChange}>
+                    <FileType size={64} />
+                    <DialogTrigger>
+                      <Button type="button" className="bg-[#182be2]">
+                        Click to fill the form
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="w-[90vw] max-w-[100vw]">
+                      <p>n</p>
+                      <Test
+                        url={hookform.getValues().fields?.[selected]?.file}
+                        //annotations={getAnnotations()} //
+                        annotations={hookform.getValues().fields?.[selected]?.attachments}
+                        setAnnotations={(arr) => hookform.setValue(`fields.${selected}.attachments`, arr)} //{setAnnotations}
+                        pdfIndex={selected}
+                        onSave={() => console.log("save")}
+                        setDateCollector={setDateCollector}
+                        // url={field.value}
+                        // annotations={annotations}
+                        // setAnnotations={setAnnotations}
+                        // pdfIndex={index}
+                        // onSave={handleSave}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            )}
           </div>
           {/* list */}
           <div className=" bg-white w-60">
@@ -219,6 +330,8 @@ function Page({ params }: { params: { formId: string } }) {
                 }`}
                 onClick={() => {
                   setSelected(i);
+                  setAnnotations(hookform.getValues().fields?.[i]?.attachments || []);
+                  console.log("annnnn",i,selected,hookform.getValues().fields?.[i]?.attachments);
                 }}
               >
                 <FormField
@@ -227,8 +340,10 @@ function Page({ params }: { params: { formId: string } }) {
                   render={({ field }) => (
                     <FormItem className="">
                       <div className="flex items-center justify-between py-4 gap-x-4">
-                        <FormLabel className="text-sm font-medium pl-4">
-                          {i + 1} {field.value.name}
+                        <FormLabel className="text-sm font-medium pl-4 flex ">
+                          {i + 1} {field.value.name} 
+                          {/* thisDone =  */}
+                          <Check size={20} strokeWidth={1.5} />
                         </FormLabel>
                         {!field.value.required && (
                           <p className="text-[#5c77d1] font-semibold bg-[#dfecfc] rounded-full px-2">
@@ -271,6 +386,7 @@ function Page({ params }: { params: { formId: string } }) {
           {/* btn */}
           <div className="col-start-2 text-center">
             <Button className="bg-[#182be2]" type="submit">
+            {/* <Button className="bg-[#182be2]" type="button"> */}
               Continue
             </Button>
           </div>
